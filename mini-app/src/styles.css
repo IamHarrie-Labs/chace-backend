@@ -1,0 +1,47 @@
+/* Chace Mini App */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Full-screen shell — fills the Telegram webview */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  max-width: 480px;   /* comfortable on desktop too */
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 72px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.content-scroll::-webkit-scrollbar { display: none; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen-in { animation: slideUp 0.18s ease-out both; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-enter { animation: toastIn 0.18s ease-out both; }

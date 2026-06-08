@@ -1,0 +1,41 @@
+{
+  "name": "ton-delegate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Safe autonomous DeFi delegation on TON — Mira reasoning + TON Agentic Wallets + Omniston swaps",
+  "scripts": {
+    "spike":    "tsx src/spike.ts",
+    "bot":      "tsx src/bot.ts",
+    "server":   "tsx src/server.ts",
+    "dev":      "tsx watch src/server.ts",
+    "build":    "tsc",
+    "start":    "node dist/server.js",
+    "mini-app": "cd mini-app && npm run dev"
+  },
+  "dependencies": {
+    "@ston-fi/omniston-sdk": "^0.8.3",
+    "@ton/core": "^0.59.0",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^15.1.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "axios": "^1.7.0",
+    "better-sqlite3": "^12.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.0",
+    "express": "^5.2.1",
+    "grammy": "^1.30.0",
+    "node-cron": "^3.0.3",
+    "rxjs": "^7.8.2",
+    "ws": "^8.18.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/ws": "^8.5.0",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.0"
+  }
+}
