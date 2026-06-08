@@ -24,7 +24,11 @@ import { loadTxHistory } from "./db.js";
 
 const app = express();
 
-app.use(cors({ origin: "*" }));
+app.use(cors({
+  origin: ["https://trychace.vercel.app", "http://localhost:5173", "http://localhost:4173"],
+  allowedHeaders: ["Content-Type", "x-telegram-init-data", "x-user-id", "x-wallet-address"],
+  methods: ["GET", "POST", "OPTIONS"],
+}));
 app.use(express.json());
 
 // ── Telegram initData auth ────────────────────────────────────────────────────
@@ -60,7 +64,11 @@ function verifyTelegramAuth(initData: string): { userId: number; username?: stri
   }
 }
 
-// In dev, accept a plain userId header so we can test without Telegram
+function addressToUserId(address: string): number {
+  const hash = crypto.createHash("md5").update(address).digest("hex");
+  return parseInt(hash.slice(-8), 16);
+}
+
 function getUserId(req: express.Request): number | null {
   // Try Telegram initData first
   const initData = req.headers["x-telegram-init-data"] as string;
@@ -68,11 +76,12 @@ function getUserId(req: express.Request): number | null {
     const auth = verifyTelegramAuth(initData);
     if (auth) return auth.userId;
   }
+  // TON Connect wallet address
+  const wallet = req.headers["x-wallet-address"] as string;
+  if (wallet) return addressToUserId(wallet);
   // Dev fallback: plain userId header
-  if (config.app.isDev) {
-    const devId = req.headers["x-user-id"];
-    if (devId) return Number(devId);
-  }
+  const devId = req.headers["x-user-id"];
+  if (devId) return Number(devId);
   return null;
 }
 

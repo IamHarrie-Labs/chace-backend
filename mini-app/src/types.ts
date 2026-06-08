@@ -1,6 +1,6 @@
 // ── Agent / Strategy types ────────────────────────────────────────────────────
 
-export type AgentType = 'dca' | 'limit' | 'yield';
+export type AgentType = 'dca' | 'limit' | 'yield' | 'bills';
 
 export type AgentStatus = 'active' | 'complete';
 
@@ -14,6 +14,7 @@ export interface ChatMessage {
 export interface Agent {
   id: number;
   type: AgentType;
+  name?: string;        // user-chosen name
   title: string;
   subtitle: string;
   completedBuys: number;
@@ -37,12 +38,14 @@ export interface TxRecord {
 
 export interface LaunchParams {
   type: AgentType;
+  name?: string;
   from: string;
   to: string;
   amt: string;
   buys: number;
   freq: string;
   lp: string;
+  service?: string;   // for bills agent (Netflix, Spotify, etc.)
 }
 
 export type Screen = 'home' | 'new' | 'strategies' | 'activity' | 'chat';

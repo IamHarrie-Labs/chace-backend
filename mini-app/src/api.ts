@@ -6,14 +6,17 @@
 
 const BASE = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3000";
 
+let _walletAddress: string | null = null;
+export function setWalletAddress(addr: string | null) { _walletAddress = addr; }
+
 function headers(): Record<string, string> {
   const h: Record<string, string> = { "Content-Type": "application/json" };
-  // Use Telegram initData when running inside Telegram
   const tg = (window as any).Telegram?.WebApp;
   if (tg?.initData) {
     h["x-telegram-init-data"] = tg.initData;
+  } else if (_walletAddress) {
+    h["x-wallet-address"] = _walletAddress;
   } else {
-    // Dev fallback: hardcode a test userId
     h["x-user-id"] = "12345";
   }
   return h;

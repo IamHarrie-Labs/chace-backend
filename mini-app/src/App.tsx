@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Agent, AgentType, ChatMessage, LaunchParams, Screen } from "./types";
 import { SEED_AGENTS } from "./mockData";
 import { useTheme } from "./ThemeContext";
-import { api } from "./api";
+import { api, setWalletAddress } from "./api";
+import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
 import "./styles.css";
 
 import ChaceMark from "./components/ChaceMark";
@@ -24,14 +25,20 @@ const SCREEN_TITLES: Record<Screen, string> = {
 
 export default function App() {
   const { theme, isDark, toggle } = useTheme();
+  const walletAddress = useTonAddress();
 
-  const [screen, setScreen]         = useState<Screen>('home');
-  const [newType, setNewType]       = useState<AgentType>('dca');
-  const [agents, setAgents]         = useState<Agent[]>(SEED_AGENTS);
+  // Sync wallet address to API client whenever it changes
+  useEffect(() => {
+    setWalletAddress(walletAddress || null);
+  }, [walletAddress]);
+
+  const [screen, setScreen]           = useState<Screen>('home');
+  const [newType, setNewType]         = useState<AgentType>('dca');
+  const [agents, setAgents]           = useState<Agent[]>(SEED_AGENTS);
   const [chatAgentId, setChatAgentId] = useState<number | null>(null);
-  const [revokeId, setRevokeId]     = useState<number | null>(null);
-  const [toast, setToast]           = useState<string | null>(null);
-  const [toastKey, setToastKey]     = useState(0);
+  const [revokeId, setRevokeId]       = useState<number | null>(null);
+  const [toast, setToast]             = useState<string | null>(null);
+  const [toastKey, setToastKey]       = useState(0);
 
   const activeCount = agents.filter(a => a.status !== 'complete').length;
   const chatAgent   = agents.find(a => a.id === chatAgentId) ?? null;
@@ -61,56 +68,61 @@ export default function App() {
   }
 
   async function handleLaunch(params: LaunchParams) {
-    const { type, from, to, amt, buys, freq, lp } = params;
+    const { type, name, from, to, amt, buys, freq, lp, service } = params;
 
     const freqToMinutes: Record<string, number> = {
       hourly: 60, daily: 1440, weekly: 10080,
     };
 
-    const titles: Record<AgentType, string> = {
-      dca:   `${from} → ${to} DCA`,
-      limit: `Buy ${from} < $${lp}`,
-      yield: `${from} Yield`,
-    };
+    const autoTitle = type === 'dca'   ? `${from} → ${to} DCA`
+                    : type === 'limit' ? `Buy ${from} < $${lp}`
+                    : type === 'yield' ? `${from} Yield`
+                    : `${service ?? 'Bills'} Auto-Pay`;
+
     const subs: Record<AgentType, string> = {
       dca:   `${(parseFloat(amt || '0') / buys).toFixed(2)} ${from} × ${buys} buys · ${freq}`,
       limit: 'Limit order · monitoring',
       yield: 'Auto-compounding',
+      bills: `${service} · monthly · ${amt} TON`,
     };
+
+    const initMsg = type === 'dca'   ? `DCA agent deployed. Buying ${(parseFloat(amt||'0')/buys).toFixed(2)} ${from} → ${to} every ${freq}, ${buys} times. Tap here to check in.`
+                  : type === 'limit' ? `Limit agent online. Watching ${from}/USD. I'll trigger the moment price drops below $${lp}.`
+                  : type === 'yield' ? `Yield agent active. Auto-compounding your ${from} position.`
+                  : `Bills agent ready. I'll auto-pay your ${service} subscription monthly using TON via Bitrefill.`;
 
     const localId = Date.now();
     const newAgent: Agent = {
       id: localId, type,
-      title: titles[type], subtitle: subs[type],
+      name: name || undefined,
+      title: name || autoTitle,
+      subtitle: subs[type],
       completedBuys: 0, totalBuys: type === 'dca' ? buys : 0,
       nextIn: type === 'dca' ? `~1 ${freq}` : '—',
-      amount: `${amt} ${from} funded`,
+      amount: `${amt} ${type === 'bills' ? 'TON/mo' : `${from} funded`}`,
       status: 'active',
-      chat: [{
-        id: `a-${localId}`, role: 'agent',
-        text: `Agent deployed. I'll ${type === 'dca' ? `DCA ${amt} ${from} into ${to} over ${buys} buys` : type === 'limit' ? `watch for ${from} to drop below $${lp}` : `auto-compound ${from} yield`}. Tap here anytime to check in.`,
-        ts: localId,
-      }],
+      chat: [{ id: `a-${localId}`, role: 'agent', text: initMsg, ts: localId }],
     };
     setAgents(prev => [newAgent, ...prev]);
     setScreen('home');
     showToast('Launching agent…');
 
-    // Fire real backend in background
-    try {
-      const res = await api.launch({
-        type, from, to,
-        amount: parseFloat(amt) || 0,
-        buys: type === 'dca' ? buys : undefined,
-        intervalMinutes: type === 'dca' ? freqToMinutes[freq] : undefined,
-      });
-      if (res.ok && res.sessionId) {
-        setAgents(prev => prev.map(a =>
-          a.id === localId ? { ...a, sessionId: res.sessionId } : a
-        ));
+    if (type !== 'bills') {
+      try {
+        const res = await api.launch({
+          type, from, to,
+          amount: parseFloat(amt) || 0,
+          buys: type === 'dca' ? buys : undefined,
+          intervalMinutes: type === 'dca' ? freqToMinutes[freq] : undefined,
+        });
+        if (res.ok && res.sessionId) {
+          setAgents(prev => prev.map(a =>
+            a.id === localId ? { ...a, sessionId: res.sessionId } : a
+          ));
+        }
+      } catch (err) {
+        console.warn('[launch] Backend unavailable (agent shown locally):', err);
       }
-    } catch (err) {
-      console.warn('[launch] Backend error (agent still shown locally):', err);
     }
 
     showToast('Agent launched ⟳');
@@ -128,8 +140,6 @@ export default function App() {
     setRevokeId(null);
     if (screen === 'chat') setScreen('strategies');
     showToast('Revoking agent…');
-
-    // Fire backend revoke in background
     if (target?.sessionId) {
       api.revoke(target.sessionId)
         .then(() => showToast('Agent revoked — funds returned'))
@@ -152,7 +162,6 @@ export default function App() {
         display: 'flex', alignItems: 'center', gap: 12,
         flexShrink: 0,
       }}>
-        {/* Back button for non-home screens */}
         {screen !== 'home' ? (
           <button
             onClick={() => screen === 'chat' ? goTo('strategies') : goTo('home')}
@@ -179,7 +188,9 @@ export default function App() {
           </div>
           {screen === 'home' && (
             <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.sub, marginTop: 1 }}>
-              Autonomous DeFi · online
+              {walletAddress
+                ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
+                : 'Autonomous DeFi · online'}
             </div>
           )}
           {screen === 'chat' && chatAgent && (
@@ -189,34 +200,36 @@ export default function App() {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {screen === 'home' && (
-            <div style={{
-              background: `${theme.accent}15`, border: `1px solid ${theme.accent}44`,
-              borderRadius: 4, padding: '3px 8px',
-              fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.accent, letterSpacing: 1,
-            }}>
-              {activeCount} ACTIVE
-            </div>
+            <>
+              {/* TON Connect button */}
+              <div style={{ transform: 'scale(0.8)', transformOrigin: 'right center' }}>
+                <TonConnectButton />
+              </div>
+              <div style={{
+                background: `${theme.accent}15`, border: `1px solid ${theme.accent}44`,
+                borderRadius: 4, padding: '3px 8px',
+                fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.accent, letterSpacing: 1,
+              }}>
+                {activeCount} ACTIVE
+              </div>
+            </>
           )}
-          {/* Dark / light toggle */}
           <button onClick={toggle} style={{
             background: theme.card, border: `1.5px solid ${theme.bdr}`,
             borderRadius: 20, padding: '5px 10px',
             cursor: 'pointer', fontSize: 13, lineHeight: 1,
-            display: 'flex', alignItems: 'center', gap: 4,
+            display: 'flex', alignItems: 'center',
           }}>
-            <span>{isDark ? '☀️' : '🌙'}</span>
+            {isDark ? '☀️' : '🌙'}
           </button>
         </div>
       </div>
 
       {/* ── Screen content ── */}
       {screen === 'chat' && chatAgent ? (
-        <AgentChatScreen
-          agent={chatAgent}
-          onAddMessage={handleAddMessage}
-        />
+        <AgentChatScreen agent={chatAgent} onAddMessage={handleAddMessage} />
       ) : (
         <div className="content-scroll">
           <div key={screen} className="screen-in" style={{ paddingTop: 16 }}>
@@ -240,22 +253,16 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Bottom nav (hidden in chat) ── */}
-      {showNav && (
-        <NavBar screen={screen} onNav={handleNav} agentCount={activeCount} />
-      )}
+      {showNav && <NavBar screen={screen} onNav={handleNav} agentCount={activeCount} />}
 
-      {/* ── Revoke modal ── */}
       {revokeId !== null && (
         <RevokeModal onCancel={() => setRevokeId(null)} onConfirm={confirmRevoke} />
       )}
 
-      {/* ── Toast ── */}
       {toast && (
         <div key={toastKey} className="toast-enter" style={{
           position: 'absolute', top: 70, left: 16, right: 16, zIndex: 200,
-          background: theme.accent,
-          borderRadius: 8, padding: '12px 16px',
+          background: theme.accent, borderRadius: 8, padding: '12px 16px',
           fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700,
           color: '#fff', letterSpacing: 0.5, textAlign: 'center',
           boxShadow: `0 4px 16px ${theme.accent}44`,
