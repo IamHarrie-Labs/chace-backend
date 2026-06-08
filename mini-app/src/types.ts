@@ -46,6 +46,7 @@ export interface LaunchParams {
   freq: string;
   lp: string;
   service?: string;   // for bills agent (Netflix, Spotify, etc.)
+  email?: string;     // for bills agent — Bitrefill account email
 }
 
 export type Screen = 'home' | 'new' | 'strategies' | 'activity' | 'chat';

@@ -37,6 +37,7 @@ export default function NewStrategyScreen({ initialType, onLaunch, onBack }: Pro
   const [freq, setFreq]       = useState('daily');
   const [lp, setLp]           = useState('3.80');
   const [service, setService] = useState('Netflix');
+  const [email, setEmail]     = useState('');
 
   const usd = (parseFloat(amt || '0') * 4.87).toFixed(2);
   const autoName = type === 'dca'   ? `${from} → ${to} DCA`
@@ -105,6 +106,13 @@ export default function NewStrategyScreen({ initialType, onLaunch, onBack }: Pro
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {type === 'bills' ? (
                   <>
+                    {/* How it works */}
+                    <div style={{ ...nb(`${theme.accent}0A`, 10, 'none'), padding: '12px 14px', border: `1.5px solid ${theme.accent}44` }}>
+                      <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 8, color: theme.accent, letterSpacing: 2, marginBottom: 4 }}>HOW BILLS WORKS</div>
+                      <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 10, color: '#6B7280', lineHeight: 1.8 }}>
+                        Chace pays your subscription via <strong style={{ color: theme.text }}>Bitrefill</strong> using TON from your agent wallet. You need a free Bitrefill account — your email links the payment to your account.
+                      </div>
+                    </div>
                     <div>
                       <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#6B7280', letterSpacing: 2, marginBottom: 8 }}>SELECT SERVICE</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -114,10 +122,27 @@ export default function NewStrategyScreen({ initialType, onLaunch, onBack }: Pro
                       </div>
                     </div>
                     <div>
+                      <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#6B7280', letterSpacing: 2, marginBottom: 8 }}>BITREFILL EMAIL</div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        style={{ width: '100%', background: theme.card, border: `2px solid ${email ? '#0A0A18' : '#0A0A18'}`, borderRadius: 8, padding: '13px 16px', fontFamily: 'Space Grotesk, sans-serif', fontSize: 15, fontWeight: 600, color: theme.text, outline: 'none', boxSizing: 'border-box' as const, boxShadow: '3px 3px 0 #0A0A18' }}
+                      />
+                      <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#9CA3AF', marginTop: 5 }}>The email on your Bitrefill account — payment is delivered here</div>
+                    </div>
+                    <div>
                       <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#6B7280', letterSpacing: 2, marginBottom: 8 }}>MONTHLY BUDGET (TON)</div>
                       <div style={{ position: 'relative' }}>
                         <input type="number" value={amt} onChange={e => setAmt(e.target.value)} style={inp} />
                         <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontFamily: 'Space Mono, monospace', fontSize: 11, color: theme.accent, fontWeight: 700 }}>TON</span>
+                      </div>
+                    </div>
+                    {/* Testnet / dev notice */}
+                    <div style={{ ...nb(`${theme.red}08`, 8, 'none'), padding: '10px 12px', border: `1px solid ${theme.red}33` }}>
+                      <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: theme.red, lineHeight: 1.7 }}>
+                        ⚠ On testnet, the agent is created but no real payment is sent. Bitrefill payments go live when deployed to mainnet TON.
                       </div>
                     </div>
                   </>
@@ -181,7 +206,7 @@ export default function NewStrategyScreen({ initialType, onLaunch, onBack }: Pro
               <div style={{ ...nb(theme.card, 12, `5px 5px 0 #0A0A18`), padding: '18px', marginBottom: 14 }}>
                 {([
                   ['Strategy', type === 'dca' ? 'Dollar Cost Average' : type === 'limit' ? 'Limit Order' : type === 'yield' ? 'Yield Farming' : 'Bill Payment'],
-                  ...(type === 'bills' ? [['Service', service], ['Budget', `${amt} TON/month · $${usd}`]] : [
+                  ...(type === 'bills' ? [['Service', service], ['Email', email || '(none)'], ['Budget', `${amt} TON/month · $${usd}`]] : [
                     ['Pair', `${from} → ${to}`],
                     ['Amount', `${amt} ${from} · $${usd}`],
                     ...(type === 'dca' ? [['Buys', `${buys} × ${(parseFloat(amt||'0')/buys).toFixed(2)} ${from}`], ['Frequency', freq]] : []),
@@ -205,7 +230,7 @@ export default function NewStrategyScreen({ initialType, onLaunch, onBack }: Pro
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setStep(2)} style={{ ...nb(theme.card, 50, '3px 3px 0 #0A0A18'), flex: 1, border: '2px solid #0A0A18', padding: '14px', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>← Back</button>
                 {walletAddress ? (
-                  <button onClick={() => onLaunch({ type, name: name || undefined, from, to, amt, buys, freq, lp, service })} style={{ ...nb(theme.accent, 50, `4px 4px 0 #0A0A18`), flex: 2, border: '2px solid #0A0A18', padding: '14px', color: '#0A0A18', fontFamily: 'Space Grotesk, sans-serif', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>Fund + Launch ⟳</button>
+                  <button onClick={() => onLaunch({ type, name: name || undefined, from, to, amt, buys, freq, lp, service, email: email || undefined })} style={{ ...nb(theme.accent, 50, `4px 4px 0 #0A0A18`), flex: 2, border: '2px solid #0A0A18', padding: '14px', color: '#0A0A18', fontFamily: 'Space Grotesk, sans-serif', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>Fund + Launch ⟳</button>
                 ) : (
                   <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ background: `${theme.red}12`, border: `1.5px solid ${theme.red}44`, borderRadius: 8, padding: '10px', textAlign: 'center', fontFamily: 'Space Mono, monospace', fontSize: 10, color: theme.red }}>Connect wallet to launch</div>

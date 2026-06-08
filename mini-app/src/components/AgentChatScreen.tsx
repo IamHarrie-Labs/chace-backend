@@ -15,34 +15,82 @@ interface Props {
   onToggleTheme: () => void;
 }
 
-const AGENT_PERSONAS: Record<string, string[]> = {
-  dca: [
-    "Still running on schedule. Next buy coming up soon.",
-    "DCA is the safest way to accumulate — I'm averaging your cost over time.",
-    "I've executed {done} of {total} buys so far. Staying on track.",
-  ],
-  limit: [
-    "Still watching. Price hasn't hit your target yet.",
-    "Patience is the game here. I'll fire the moment the price dips.",
-    "I'm monitoring 24/7 — no action needed from you.",
-  ],
-  yield: [
-    "Compounding daily. Your yield is growing.",
-    "Auto-compounding means you earn yield on your yield.",
-    "Pool APY is healthy. Principal is safe.",
-  ],
-  bills: [
-    "I'll handle your subscription automatically each month.",
-    "Yield from your TON position will cover the next payment.",
-    "Payment scheduled. I'll notify you when it executes.",
-  ],
-};
+/** Smart contextual fallback — reads the user's message and responds relevantly */
+function getSmartReply(agent: Agent, userMsg: string): string {
+  const m = userMsg.toLowerCase();
+  const pct = agent.totalBuys > 0 ? Math.round((agent.completedBuys / agent.totalBuys) * 100) : 0;
 
-function getAgentReply(agent: Agent): string {
-  const lines = AGENT_PERSONAS[agent.type] ?? AGENT_PERSONAS.dca;
-  return lines[Math.floor(Math.random() * lines.length)]
-    .replace('{done}', String(agent.completedBuys))
-    .replace('{total}', String(agent.totalBuys));
+  // Status / progress
+  if (/status|progress|how.*going|update|report/.test(m)) {
+    if (agent.type === 'dca' && agent.totalBuys > 0)
+      return `Progress: ${agent.completedBuys} of ${agent.totalBuys} buys completed (${pct}%). ${agent.nextIn !== '—' ? `Next execution in ${agent.nextIn}.` : 'All buys are done.'} Funded: ${agent.amount}.`;
+    if (agent.type === 'limit')
+      return `Still watching. I trigger the moment the price hits your target. No action needed — I'm monitoring 24/7.`;
+    if (agent.type === 'yield')
+      return `Auto-compounding is active. Your ${agent.amount} is working. Yield accumulates each cycle.`;
+    if (agent.type === 'bills')
+      return `Bills agent is active. ${agent.subtitle}. I'll execute the payment on schedule and notify you.`;
+    return `Agent is ${agent.status}. ${agent.subtitle}.`;
+  }
+
+  // Next execution
+  if (/next|when|schedule|time/.test(m)) {
+    if (agent.nextIn && agent.nextIn !== '—')
+      return `Next execution in ${agent.nextIn}. I run automatically — you don't need to do anything.`;
+    if (agent.type === 'limit')
+      return `I'll execute the moment the market hits your price target. No fixed schedule — purely price-triggered.`;
+    return `This strategy runs continuously. Check the Analytics tab for the full execution history.`;
+  }
+
+  // Price / market
+  if (/price|market|ton|usdt|eth|btc|rate|worth/.test(m)) {
+    if (agent.type === 'dca')
+      return `DCA works regardless of price — that's the point. By buying on a fixed schedule, you average out the highs and lows automatically.`;
+    if (agent.type === 'limit')
+      return `I'm watching the price in real-time. The moment it dips to your target, I'll execute the swap immediately.`;
+    return `I track market conditions continuously. The current strategy is ${agent.subtitle}.`;
+  }
+
+  // Stop / revoke / cancel
+  if (/stop|cancel|revoke|end|pause|quit/.test(m)) {
+    return `To stop this agent, tap the REVOKE button at the top of this screen. Your remaining funds will be returned to your wallet immediately — no lock-up.`;
+  }
+
+  // Funds / balance / amount
+  if (/fund|balance|amount|money|ton|how much/.test(m)) {
+    return `This agent is funded with ${agent.amount}. ${agent.totalBuys > 0 ? `${agent.completedBuys} of ${agent.totalBuys} executions done.` : ''} Revoke at any time to reclaim unused funds.`;
+  }
+
+  // Profit / P&L / earnings
+  if (/profit|earn|gain|loss|p.l|return|yield/.test(m)) {
+    if (agent.type === 'yield')
+      return `Yield is compounding automatically. Open the Analytics tab to see the full transaction history and amounts earned.`;
+    if (agent.type === 'dca')
+      return `DCA builds your position over time. P&L depends on market movement after each buy. Check Analytics for the full breakdown.`;
+    return `Open the Analytics tab (button in the header) to see all executed transactions and amounts.`;
+  }
+
+  // Help / what can you do
+  if (/help|what|can you|how do|explain/.test(m)) {
+    const descriptions: Record<string, string> = {
+      dca:   `I buy a fixed amount of crypto on a set schedule — dollar-cost averaging your entry price. Ask me about status, next buy, or funds.`,
+      limit: `I watch the market and execute a swap the moment the price hits your target. Ask me about price, status, or to stop watching.`,
+      yield: `I auto-compound your staking rewards so you earn yield on your yield. Ask me about earnings, progress, or status.`,
+      bills: `I auto-pay your subscription using yield from your TON position. Ask me about the next payment date or how much is reserved.`,
+    };
+    return descriptions[agent.type] ?? `I'm your autonomous ${agent.type} agent. Ask me about status, funds, next execution, or anything about this strategy.`;
+  }
+
+  // Default — acknowledge + redirect
+  const acks = ['Got it.', 'Understood.', 'Sure.', 'On it.'];
+  const ack = acks[Math.floor(Math.random() * acks.length)];
+  const typeDefaults: Record<string, string> = {
+    dca:   `${ack} I'm running your DCA strategy — ${agent.completedBuys}/${agent.totalBuys} buys done. Ask me about status, next buy, or funds anytime.`,
+    limit: `${ack} Limit order is active. I'm watching the price 24/7 and will fire when it hits your target.`,
+    yield: `${ack} Yield strategy is compounding. Your ${agent.amount} is actively working.`,
+    bills: `${ack} Bills agent is active for ${agent.subtitle}. Next payment is scheduled.`,
+  };
+  return typeDefaults[agent.type] ?? `${ack} Agent is ${agent.status}. ${agent.subtitle}.`;
 }
 
 const nb = (bg = '#fff', r = 14, sh = '4px 4px 0 #0A0A18'): React.CSSProperties => ({
@@ -105,15 +153,24 @@ export default function AgentChatScreen({ agent, walletAddress, initialTab = 'ch
     try {
       let replyText: string;
       if (agent.sessionId) {
-        const res = await api.chat(agent.sessionId, text);
-        replyText = res.reply;
+        // Try the AI backend first
+        try {
+          const res = await api.chat(agent.sessionId, text);
+          replyText = res.reply;
+        } catch (backendErr) {
+          // Backend offline (Render free tier sleeps) — use smart local fallback
+          console.warn('[chat] Backend offline, using local fallback:', backendErr);
+          await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
+          replyText = getSmartReply(agent, text) + '\n\n_(AI backend is starting up — full responses available in ~30s)_';
+        }
       } else {
-        await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
-        replyText = getAgentReply(agent);
+        // No backend session yet — smart local fallback only
+        await new Promise(r => setTimeout(r, 400 + Math.random() * 300));
+        replyText = getSmartReply(agent, text);
       }
       onAddMessage(agent.id, { id: `a-${Date.now()}`, role: 'agent', text: replyText, ts: Date.now() });
     } catch (err) {
-      onAddMessage(agent.id, { id: `a-${Date.now()}`, role: 'agent', text: `Something went wrong: ${(err as Error).message}`, ts: Date.now() });
+      onAddMessage(agent.id, { id: `a-${Date.now()}`, role: 'agent', text: `Error: ${(err as Error).message}`, ts: Date.now() });
     } finally { setThinking(false); }
   }
 
