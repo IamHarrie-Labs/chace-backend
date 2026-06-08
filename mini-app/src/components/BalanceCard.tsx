@@ -21,42 +21,67 @@ export default function BalanceCard() {
   return (
     <div style={{
       background: theme.card,
-      border: `2px solid ${theme.accent}`,
-      boxShadow: `4px 4px 0 ${theme.accent}44`,
-      borderRadius: 8,
-      padding: '20px 20px 16px',
+      borderRadius: 20,
+      boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+      padding: '24px 20px 20px',
       margin: '0 16px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.sub, letterSpacing: 2 }}>
-          MASTER WALLET
-        </div>
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: theme.sub, letterSpacing: 0.5 }}>
+          Master Wallet
+        </span>
         {network && (
-          <div style={{
-            fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: 1,
-            color: network === 'mainnet' ? theme.accent : '#D4930A',
-            background: network === 'mainnet' ? `${theme.accent}15` : '#D4930A15',
-            border: `1px solid ${network === 'mainnet' ? theme.accent : '#D4930A'}44`,
-            borderRadius: 4, padding: '2px 6px',
+          <span style={{
+            fontSize: 10, fontWeight: 700,
+            color: network === 'mainnet' ? theme.accent : '#F59E0B',
+            background: network === 'mainnet' ? `${theme.accent}15` : '#F59E0B18',
+            borderRadius: 20, padding: '3px 10px',
           }}>
             {network.toUpperCase()}
-          </div>
+          </span>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
-        <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: -2, color: theme.text, lineHeight: 1 }}>
-          {balance === null ? (
-            <span style={{ fontSize: 20, color: theme.sub }}>loading…</span>
-          ) : disp}
+
+      {/* Big balance */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6, marginBottom: 4 }}>
+        <span style={{ fontSize: 44, fontWeight: 800, letterSpacing: -2, color: theme.text, lineHeight: 1 }}>
+          {balance === null
+            ? <span style={{ fontSize: 22, color: theme.sub, fontWeight: 500 }}>loading…</span>
+            : disp}
         </span>
-        {balance !== null && <span style={{ fontSize: 17, fontWeight: 700, color: theme.accent }}>TON</span>}
+        {balance !== null && (
+          <span style={{ fontSize: 20, fontWeight: 700, color: theme.accent }}>TON</span>
+        )}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-        <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, color: theme.sub }}>≈ ${usd} USD</span>
-        <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, color: theme.accent }}>agent funds</span>
+
+      <div style={{ fontSize: 13, color: theme.sub, fontWeight: 500, marginBottom: 16 }}>
+        ≈ ${usd} USD
       </div>
-      <div style={{ marginTop: 14, height: 2, background: theme.dim, borderRadius: 1 }}>
-        <div style={{ width: ton != null && ton > 0 ? '100%' : '0%', height: '100%', background: theme.accent, borderRadius: 1, transition: 'width 0.6s ease' }} />
+
+      {/* Progress bar */}
+      <div style={{ height: 4, background: theme.dim, borderRadius: 4 }}>
+        <div style={{
+          width: ton != null && ton > 0 ? '100%' : '4%',
+          height: '100%', background: theme.accent, borderRadius: 4,
+          transition: 'width 0.6s ease',
+        }} />
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        {[
+          { label: 'Agent Funds', val: disp + ' TON' },
+          { label: 'Active Agents', val: '—' },
+        ].map(s => (
+          <div key={s.label} style={{
+            flex: 1, background: `${theme.accent}0D`,
+            borderRadius: 12, padding: '10px 12px',
+          }}>
+            <div style={{ fontSize: 10, color: theme.sub, fontWeight: 500, marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: theme.accent }}>{s.val}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -190,8 +190,7 @@ export default function App() {
       {/* ── Header ── */}
       <div style={{
         background: theme.surf,
-        borderBottom: `1px solid ${theme.bdr}`,
-        padding: '12px 16px',
+        padding: '14px 16px 12px',
         display: 'flex', alignItems: 'center', gap: 12,
         flexShrink: 0,
       }}>
@@ -199,35 +198,37 @@ export default function App() {
           <button
             onClick={() => screen === 'chat' ? goTo('strategies') : goTo('home')}
             style={{
-              background: 'none', border: 'none', color: theme.sub,
-              fontSize: 24, cursor: 'pointer', padding: '0 4px',
-              lineHeight: 1, display: 'flex', alignItems: 'center',
+              width: 36, height: 36, borderRadius: '50%',
+              background: theme.card, border: `1px solid ${theme.bdr}`,
+              color: theme.text, fontSize: 20, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
             }}
           >‹</button>
         ) : (
           <div style={{
-            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-            background: `${theme.accent}15`,
-            border: `1.5px solid ${theme.accent}`,
+            width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+            background: theme.accent,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: `0 4px 12px ${theme.accent}44`,
           }}>
-            <ChaceMark size={18} color={theme.accent} />
+            <ChaceMark size={18} color="#fff" />
           </div>
         )}
 
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: theme.text, lineHeight: 1.2 }}>
-            {SCREEN_TITLES[screen]}
+          <div style={{ fontSize: 18, fontWeight: 800, color: theme.text, lineHeight: 1.2 }}>
+            {screen === 'home' ? 'Chace' : SCREEN_TITLES[screen]}
           </div>
           {screen === 'home' && (
-            <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.sub, marginTop: 1 }}>
+            <div style={{ fontSize: 11, color: theme.sub, marginTop: 1, fontWeight: 400 }}>
               {walletAddress
                 ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
-                : 'Autonomous DeFi · online'}
+                : 'Autonomous DeFi'}
             </div>
           )}
           {screen === 'chat' && chatAgent && (
-            <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.sub, marginTop: 1 }}>
+            <div style={{ fontSize: 11, color: theme.sub, marginTop: 1, fontWeight: 400 }}>
               {chatAgent.title}
             </div>
           )}
@@ -235,25 +236,17 @@ export default function App() {
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {screen === 'home' && (
-            <>
-              {/* TON Connect button */}
-              <div style={{ transform: 'scale(0.8)', transformOrigin: 'right center' }}>
-                <TonConnectButton />
-              </div>
-              <div style={{
-                background: `${theme.accent}15`, border: `1px solid ${theme.accent}44`,
-                borderRadius: 4, padding: '3px 8px',
-                fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.accent, letterSpacing: 1,
-              }}>
-                {activeCount} ACTIVE
-              </div>
-            </>
+            <div style={{ transform: 'scale(0.82)', transformOrigin: 'right center' }}>
+              <TonConnectButton />
+            </div>
           )}
           <button onClick={toggle} style={{
-            background: theme.card, border: `1.5px solid ${theme.bdr}`,
-            borderRadius: 20, padding: '5px 10px',
-            cursor: 'pointer', fontSize: 13, lineHeight: 1,
-            display: 'flex', alignItems: 'center',
+            width: 34, height: 34,
+            background: theme.card, border: `1px solid ${theme.bdr}`,
+            borderRadius: '50%', padding: 0,
+            cursor: 'pointer', fontSize: 15, lineHeight: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
           }}>
             {isDark ? '☀️' : '🌙'}
           </button>

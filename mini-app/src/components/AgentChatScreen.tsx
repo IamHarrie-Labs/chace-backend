@@ -52,12 +52,7 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
     if (!text) return;
     setInput('');
 
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      role: 'user',
-      text,
-      ts: Date.now(),
-    };
+    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', text, ts: Date.now() };
     onAddMessage(agent.id, userMsg);
     setThinking(true);
 
@@ -67,25 +62,12 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
         const res = await api.chat(agent.sessionId, text);
         replyText = res.reply;
       } else {
-        // Fallback mock for seed agents without a real session
         await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
         replyText = getAgentReply(agent);
       }
-      const agentMsg: ChatMessage = {
-        id: `a-${Date.now()}`,
-        role: 'agent',
-        text: replyText,
-        ts: Date.now(),
-      };
-      onAddMessage(agent.id, agentMsg);
+      onAddMessage(agent.id, { id: `a-${Date.now()}`, role: 'agent', text: replyText, ts: Date.now() });
     } catch (err) {
-      const agentMsg: ChatMessage = {
-        id: `a-${Date.now()}`,
-        role: 'agent',
-        text: `Something went wrong: ${(err as Error).message}`,
-        ts: Date.now(),
-      };
-      onAddMessage(agent.id, agentMsg);
+      onAddMessage(agent.id, { id: `a-${Date.now()}`, role: 'agent', text: `Something went wrong: ${(err as Error).message}`, ts: Date.now() });
     } finally {
       setThinking(false);
     }
@@ -99,30 +81,28 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
     new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
-      background: theme.bg,
-    }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
+
       {/* Agent info strip */}
       <div style={{
-        padding: '10px 16px 12px',
+        padding: '12px 16px 14px',
         borderBottom: `1px solid ${theme.bdr}`,
-        display: 'flex', alignItems: 'center', gap: 10,
+        background: theme.card,
+        display: 'flex', alignItems: 'center', gap: 12,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
       }}>
         <div style={{
-          width: 36, height: 36, borderRadius: '50%',
+          width: 40, height: 40, borderRadius: 14,
           background: `${theme.accent}18`,
-          border: `1.5px solid ${theme.accent}55`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'Space Mono,monospace', fontSize: 10,
-          color: theme.accent, fontWeight: 700,
+          fontSize: 18, color: theme.accent,
         }}>
-          {agent.type === 'dca' ? '⟳' : agent.type === 'limit' ? '⊙' : '◈'}
+          {agent.type === 'dca' ? '⟳' : agent.type === 'limit' ? '⊙' : agent.type === 'bills' ? '◎' : '◈'}
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: theme.text }}>{agent.title}</div>
-          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.sub }}>
-            {agent.status === 'active' ? '● online' : '○ complete'}
+          <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>{agent.title}</div>
+          <div style={{ fontSize: 11, color: agent.status === 'active' ? '#22C55E' : theme.sub, fontWeight: 500, marginTop: 1 }}>
+            {agent.status === 'active' ? '● Online' : '○ Complete'}
           </div>
         </div>
       </div>
@@ -130,7 +110,7 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
       {/* Messages */}
       <div style={{
         flex: 1, overflowY: 'auto', padding: '16px',
-        display: 'flex', flexDirection: 'column', gap: 12,
+        display: 'flex', flexDirection: 'column', gap: 14,
         scrollbarWidth: 'none',
       }}>
         {agent.chat.map(msg => (
@@ -141,29 +121,28 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
           }}>
             {msg.role === 'agent' && (
               <div style={{
-                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                background: `${theme.accent}20`,
-                border: `1.5px solid ${theme.accent}55`,
+                width: 30, height: 30, borderRadius: 10, flexShrink: 0,
+                background: `${theme.accent}18`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, color: theme.accent,
+                fontSize: 12, fontWeight: 700, color: theme.accent,
               }}>C</div>
             )}
-            <div style={{ maxWidth: '72%' }}>
+            <div style={{ maxWidth: '74%' }}>
               <div style={{
-                padding: '10px 13px',
-                borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                padding: '11px 14px',
+                borderRadius: msg.role === 'user' ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
                 background: msg.role === 'user' ? theme.accent : theme.card,
-                border: `1.5px solid ${msg.role === 'user' ? theme.accent : theme.bdr}`,
-                fontSize: 13, lineHeight: 1.5,
+                boxShadow: msg.role === 'agent' ? '0 2px 8px rgba(0,0,0,0.07)' : 'none',
+                fontSize: 14, lineHeight: 1.5,
                 color: msg.role === 'user' ? '#fff' : theme.text,
-                fontWeight: msg.role === 'user' ? 600 : 400,
+                fontWeight: msg.role === 'user' ? 500 : 400,
               }}>
                 {msg.text}
               </div>
               <div style={{
-                fontFamily: 'Space Mono,monospace', fontSize: 9,
-                color: theme.sub, marginTop: 3,
+                fontSize: 10, color: theme.sub, marginTop: 4,
                 textAlign: msg.role === 'user' ? 'right' : 'left',
+                fontWeight: 400,
               }}>
                 {timeStr(msg.ts)}
               </div>
@@ -174,18 +153,17 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
         {thinking && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
             <div style={{
-              width: 28, height: 28, borderRadius: '50%',
-              background: `${theme.accent}20`,
-              border: `1.5px solid ${theme.accent}55`,
+              width: 30, height: 30, borderRadius: 10,
+              background: `${theme.accent}18`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, color: theme.accent,
+              fontSize: 12, fontWeight: 700, color: theme.accent,
             }}>C</div>
             <div style={{
-              padding: '10px 16px',
-              borderRadius: '14px 14px 14px 4px',
-              background: theme.card, border: `1.5px solid ${theme.bdr}`,
-              fontFamily: 'Space Mono,monospace', fontSize: 13,
-              color: theme.sub, letterSpacing: 3,
+              padding: '12px 18px',
+              borderRadius: '18px 18px 18px 6px',
+              background: theme.card,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+              fontSize: 16, color: theme.sub, letterSpacing: 4,
             }}>···</div>
           </div>
         )}
@@ -196,8 +174,9 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
       <div style={{
         padding: '10px 12px 16px',
         borderTop: `1px solid ${theme.bdr}`,
-        background: theme.surf,
-        display: 'flex', gap: 8, alignItems: 'flex-end',
+        background: theme.card,
+        display: 'flex', gap: 10, alignItems: 'flex-end',
+        boxShadow: '0 -2px 8px rgba(0,0,0,0.04)',
       }}>
         <textarea
           value={input}
@@ -206,11 +185,11 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
           placeholder="Ask your agent anything…"
           rows={1}
           style={{
-            flex: 1, background: theme.card,
+            flex: 1, background: theme.bg,
             border: `1.5px solid ${theme.bdr}`,
-            borderRadius: 10, padding: '10px 12px',
-            fontSize: 13, color: theme.text,
-            fontFamily: 'Space Grotesk,sans-serif',
+            borderRadius: 20, padding: '11px 16px',
+            fontSize: 14, color: theme.text,
+            fontFamily: 'Inter, sans-serif',
             resize: 'none', outline: 'none',
             lineHeight: 1.4, maxHeight: 80, overflowY: 'auto',
           }}
@@ -219,12 +198,13 @@ export default function AgentChatScreen({ agent, onAddMessage }: Props) {
           onClick={send}
           disabled={!input.trim() || thinking}
           style={{
-            width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
             background: input.trim() && !thinking ? theme.accent : theme.dim,
             border: 'none', cursor: input.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 17, color: '#fff',
-            transition: 'background 0.15s',
+            fontSize: 18, color: '#fff',
+            boxShadow: input.trim() && !thinking ? `0 4px 12px ${theme.accent}44` : 'none',
+            transition: 'background 0.15s, box-shadow 0.15s',
           }}
         >↑</button>
       </div>

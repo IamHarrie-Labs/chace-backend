@@ -1,39 +1,38 @@
-// Chace — dual theme tokens
-// Each export is a function of isDark so every component
-// simply calls C(isDark) and destructures what it needs.
-
 export interface Theme {
-  bg:    string;
-  surf:  string;
-  card:  string;
-  text:  string;
-  sub:   string;
-  bdr:   string;
-  dim:   string;
-  red:   string;
+  bg:     string;
+  surf:   string;
+  card:   string;
+  text:   string;
+  sub:    string;
+  bdr:    string;
+  dim:    string;
+  red:    string;
   accent: string;
+  yellow: string;
 }
 
 export const LIGHT: Theme = {
-  bg:    '#F8F0E3',   // warm cream
-  surf:  '#EFE4D0',   // parchment — header / nav
-  card:  '#E8D9C0',   // tan — cards
-  text:  '#1E0E04',   // espresso — primary text
-  sub:   '#7A5235',   // warm brown — labels
-  bdr:   '#C9AA82',   // tan border
-  dim:   '#D8C4A5',   // progress track
-  red:   '#A62B1F',
-  accent:'#8B4B1A',   // saddle brown — CTAs
+  bg:     '#F7C52E',   // vivid yellow — hero background
+  surf:   '#F7C52E',   // same yellow for header/nav backing
+  card:   '#FFFFFF',   // white floating cards
+  text:   '#1A1A2E',   // deep navy
+  sub:    '#6B7280',   // medium gray
+  bdr:    '#E5E7EB',   // subtle border
+  dim:    '#F3F4F6',   // progress track / empty state
+  red:    '#EF4444',
+  accent: '#7B61FF',   // purple — CTAs and active states
+  yellow: '#F7C52E',
 };
 
 export const DARK: Theme = {
-  bg:    '#150C07',   // espresso
-  surf:  '#261510',   // dark chocolate
-  card:  '#372018',   // warm dark brown
-  text:  '#F2E0CC',   // warm cream
-  sub:   '#A07858',   // warm tan
-  bdr:   '#4D2E1C',   // border brown
-  dim:   '#3D2415',   // track
-  red:   '#C0392B',
-  accent:'#C68642',   // copper
+  bg:     '#13131F',   // deep navy
+  surf:   '#1C1C2E',   // slightly lighter navy
+  card:   '#252538',   // elevated card surface
+  text:   '#FFFFFF',
+  sub:    '#9CA3AF',
+  bdr:    '#374151',
+  dim:    '#2D2D42',
+  red:    '#F87171',
+  accent: '#9B87FF',   // lighter purple for dark mode
+  yellow: '#F7C52E',
 };

@@ -8,17 +8,16 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Full-screen shell — fills the Telegram webview */
 .shell {
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100%;
-  max-width: 480px;   /* comfortable on desktop too */
+  max-width: 480px;
   margin: 0 auto;
   overflow: hidden;
   position: relative;
@@ -28,20 +27,27 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 72px;
+  padding-bottom: 88px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .content-scroll::-webkit-scrollbar { display: none; }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.screen-in { animation: slideUp 0.18s ease-out both; }
+.screen-in { animation: slideUp 0.2s cubic-bezier(0.16,1,0.3,1) both; }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.toast-enter { animation: toastIn 0.18s ease-out both; }
+.toast-enter { animation: toastIn 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* White card float on yellow */
+.card-float {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+}

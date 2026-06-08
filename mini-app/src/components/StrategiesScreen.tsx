@@ -23,29 +23,48 @@ export default function StrategiesScreen({ agents, onRevoke, onChat }: Props) {
 
   return (
     <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        {(['all','active','done'] as Filter[]).map(f => (
+
+      {/* Section title */}
+      <div style={{ fontSize: 22, fontWeight: 800, color: theme.text, padding: '4px 4px 4px' }}>
+        Your Agents
+      </div>
+
+      {/* Pill filter tabs */}
+      <div style={{
+        display: 'flex', gap: 8,
+        background: theme.card, borderRadius: 20,
+        padding: 4, width: 'fit-content',
+        boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
+      }}>
+        {(['all', 'active', 'done'] as Filter[]).map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
-            background: filter === f ? `${theme.accent}18` : theme.card,
-            border: `1.5px solid ${filter === f ? theme.accent : theme.bdr}`,
-            color: filter === f ? theme.accent : theme.sub,
-            padding: '7px 14px', fontFamily: 'Space Mono,monospace',
-            fontSize: 10, fontWeight: 700, letterSpacing: 1,
-            cursor: 'pointer', borderRadius: 4, textTransform: 'uppercase',
+            background: filter === f ? theme.accent : 'transparent',
+            border: 'none',
+            color: filter === f ? '#fff' : theme.sub,
+            padding: '7px 18px',
+            fontSize: 12, fontWeight: filter === f ? 700 : 500,
+            cursor: 'pointer', borderRadius: 16,
+            textTransform: 'capitalize',
+            transition: 'background 0.15s, color 0.15s',
           }}>{f}</button>
         ))}
       </div>
 
+      {/* Agent list */}
       {list.map(a => (
         <AgentCard key={a.id} agent={a} onRevoke={onRevoke} onChat={onChat} />
       ))}
 
       {list.length === 0 && (
         <div style={{
-          textAlign: 'center', padding: '40px 16px',
-          fontFamily: 'Space Mono,monospace', fontSize: 11, color: theme.sub,
+          textAlign: 'center', padding: '48px 16px',
+          background: theme.card, borderRadius: 16,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
         }}>
-          NO AGENTS IN THIS FILTER
+          <div style={{ fontSize: 32, marginBottom: 10 }}>📭</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: theme.sub }}>
+            No agents in this filter
+          </div>
         </div>
       )}
     </div>

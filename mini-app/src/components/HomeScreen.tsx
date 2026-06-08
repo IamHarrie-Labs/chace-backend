@@ -18,30 +18,47 @@ export default function HomeScreen({ agents, onNew, onRevoke, onChat, onViewAll 
   const active = agents.filter(a => a.status !== 'complete');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <BalanceCard />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      <div style={{ padding: '0 16px' }}>
-        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.sub, letterSpacing: 2, marginBottom: 10 }}>
-          QUICK ACTIONS
+      {/* Hero greeting */}
+      <div style={{ padding: '4px 20px 0' }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: theme.text, lineHeight: 1.2 }}>
+          Good day 👋
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <QuickBtn label="DCA"   icon="⟳" onClick={() => onNew('dca')} />
-          <QuickBtn label="LIMIT" icon="⊙" onClick={() => onNew('limit')} />
-          <QuickBtn label="YIELD" icon="◈" onClick={() => onNew('yield')} />
-          <QuickBtn label="SWAP"  icon="⇄" onClick={() => onNew('swap')} />
+        <div style={{ fontSize: 14, color: theme.sub, fontWeight: 400, marginTop: 4 }}>
+          Your agents are working for you.
         </div>
       </div>
 
-      <div style={{ padding: '0 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.sub, letterSpacing: 2 }}>
-            ACTIVE AGENTS ({active.length})
+      <BalanceCard />
+
+      {/* Quick actions */}
+      <div style={{ padding: '0 20px' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: theme.text, letterSpacing: 0.2, marginBottom: 12 }}>
+          Quick Actions
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <QuickBtn label="DCA"   icon="⟳" onClick={() => onNew('dca')} />
+          <QuickBtn label="Limit" icon="⊙" onClick={() => onNew('limit')} />
+          <QuickBtn label="Yield" icon="◈" onClick={() => onNew('yield')} />
+          <QuickBtn label="Swap"  icon="⇄" onClick={() => onNew('swap')} />
+        </div>
+      </div>
+
+      {/* Active agents */}
+      <div style={{ padding: '0 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: theme.text, letterSpacing: 0.2 }}>
+            Active Agents
+            <span style={{
+              marginLeft: 8, background: theme.accent, color: '#fff',
+              borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700,
+            }}>{active.length}</span>
           </span>
           <button onClick={onViewAll} style={{
             background: 'none', border: 'none',
-            fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.accent, cursor: 'pointer',
-          }}>SEE ALL →</button>
+            fontSize: 13, fontWeight: 600, color: theme.accent, cursor: 'pointer',
+          }}>See all →</button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -50,18 +67,24 @@ export default function HomeScreen({ agents, onNew, onRevoke, onChat, onViewAll 
           ))}
           {active.length === 0 && (
             <div style={{
-              background: theme.card, border: `2px dashed ${theme.bdr}`,
-              borderRadius: 8, padding: '32px 16px', textAlign: 'center',
+              background: theme.card,
+              border: `2px dashed ${theme.bdr}`,
+              borderRadius: 16, padding: '36px 16px', textAlign: 'center',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
             }}>
-              <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 11, color: theme.sub, marginBottom: 12 }}>
-                NO ACTIVE AGENTS
+              <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: theme.text, marginBottom: 6 }}>
+                No active agents
+              </div>
+              <div style={{ fontSize: 12, color: theme.sub, marginBottom: 16 }}>
+                Launch your first autonomous DeFi agent
               </div>
               <button onClick={() => onNew('dca')} style={{
-                background: theme.accent, border: `2px solid ${theme.accent}`,
-                color: '#fff', padding: '10px 20px',
-                fontFamily: 'Space Grotesk,sans-serif', fontSize: 13,
-                fontWeight: 800, cursor: 'pointer', borderRadius: 6,
-              }}>CREATE FIRST AGENT →</button>
+                background: theme.accent, border: 'none',
+                color: '#fff', padding: '12px 24px',
+                fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 20,
+                boxShadow: `0 4px 16px ${theme.accent}44`,
+              }}>Create Agent →</button>
             </div>
           )}
         </div>

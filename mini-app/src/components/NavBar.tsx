@@ -21,10 +21,11 @@ export default function NavBar({ screen, onNav, agentCount }: Props) {
   return (
     <nav style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
-      background: theme.surf,
-      borderTop: `1.5px solid ${theme.bdr}`,
+      background: theme.card,
+      borderTop: `1px solid ${theme.bdr}`,
       display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+      boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
     }}>
       {TABS.map(tab => {
         const active = screen === tab.id || (tab.id === 'strategies' && screen === 'chat');
@@ -37,38 +38,43 @@ export default function NavBar({ screen, onNav, agentCount }: Props) {
               flex: 1, background: 'none', border: 'none',
               cursor: 'pointer', padding: '10px 4px 6px',
               display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 3, position: 'relative',
+              alignItems: 'center', gap: 4, position: 'relative',
             }}
           >
             {tab.big ? (
               <div style={{
-                width: 40, height: 40, borderRadius: '50%',
-                background: active ? theme.accent : theme.card,
-                border: `2px solid ${active ? theme.accent : theme.bdr}`,
+                width: 44, height: 44, borderRadius: '50%',
+                background: theme.accent,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, color: active ? '#fff' : theme.sub,
-                fontWeight: 800, marginTop: -8,
-                boxShadow: active ? `0 0 0 4px ${theme.accent}22` : 'none',
-                transition: 'all 0.15s',
+                fontSize: 24, color: '#fff', fontWeight: 700, marginTop: -12,
+                boxShadow: `0 4px 16px ${theme.accent}55`,
+                transition: 'transform 0.15s',
               }}>+</div>
             ) : (
-              <span style={{ fontSize: 20, lineHeight: 1, color: active ? theme.accent : theme.sub, position: 'relative' }}>
-                {tab.icon}
+              <div style={{
+                width: 36, height: 28, borderRadius: 20,
+                background: active ? `${theme.accent}18` : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative', transition: 'background 0.15s',
+              }}>
+                <span style={{ fontSize: 18, lineHeight: 1, color: active ? theme.accent : theme.sub }}>
+                  {tab.icon}
+                </span>
                 {badge > 0 && (
                   <span style={{
-                    position: 'absolute', top: -4, right: -6,
+                    position: 'absolute', top: 0, right: 2,
                     background: theme.accent, color: '#fff',
                     borderRadius: '50%', width: 14, height: 14,
-                    fontSize: 8, fontWeight: 800, fontFamily: 'Space Mono,monospace',
+                    fontSize: 8, fontWeight: 800,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>{badge}</span>
                 )}
-              </span>
+              </div>
             )}
             <span style={{
-              fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: 0.5,
+              fontSize: 10, fontWeight: active ? 700 : 500,
               color: active ? theme.accent : theme.sub,
-              marginTop: tab.big ? 2 : 0,
+              letterSpacing: 0.2,
             }}>{tab.label}</span>
           </button>
         );
