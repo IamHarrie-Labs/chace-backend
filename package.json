@@ -2,6 +2,7 @@
   "name": "ton-delegate",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Safe autonomous DeFi delegation on TON — Mira reasoning + TON Agentic Wallets + Omniston swaps",
   "scripts": {
     "spike":    "tsx src/spike.ts",
