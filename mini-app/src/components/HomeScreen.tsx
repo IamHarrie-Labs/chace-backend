@@ -5,6 +5,7 @@ import BalanceCard from "./BalanceCard";
 import AgentCard from "./AgentCard";
 import ChaceMark from "./ChaceMark";
 import { TonConnectButton } from "@tonconnect/ui-react";
+import { useTonConnectUI } from "@tonconnect/ui-react";
 
 interface Props {
   agents: Agent[];
@@ -31,6 +32,7 @@ const nb = (bg = '#fff', r = 14, sh = '4px 4px 0 #0A0A18'): React.CSSProperties 
 
 export default function HomeScreen({ agents, onNew, onRevoke, onChat, onAnalytics, onViewAll, onActivity, walletAddress, isDark, onToggleTheme }: Props) {
   const { theme } = useTheme();
+  const [tonConnectUI] = useTonConnectUI();
   const active = agents.filter(a => a.status !== 'complete');
   const feat   = active[0] ?? null;
 
@@ -53,9 +55,11 @@ export default function HomeScreen({ agents, onNew, onRevoke, onChat, onAnalytic
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
-            <div style={{ transform: 'scale(0.8)', transformOrigin: 'right center' }}>
-              <TonConnectButton />
-            </div>
+            {/* Disconnect / switch wallet */}
+            <button onClick={() => tonConnectUI.openModal()} style={{ ...nb('rgba(255,255,255,0.25)', 50, '2px 2px 0 rgba(0,0,0,0.2)'), padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 10, color: '#0A0A18', border: '2px solid rgba(0,0,0,0.2)', boxShadow: '2px 2px 0 rgba(0,0,0,0.2)', fontFamily: 'Space Mono, monospace', fontWeight: 700, letterSpacing: 0.5 }}>
+              <span style={{ width: 7, height: 7, background: '#0A0A18', borderRadius: '50%', flexShrink: 0 }} />
+              {walletAddress.slice(0, 4)}…
+            </button>
             <button onClick={onToggleTheme} style={{ ...nb('rgba(255,255,255,0.3)', 50, '2px 2px 0 rgba(0,0,0,0.2)'), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15, color: '#0A0A18', border: '2px solid rgba(0,0,0,0.2)', boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}>
               {isDark ? '☀️' : '🌙'}
             </button>
@@ -68,7 +72,7 @@ export default function HomeScreen({ agents, onNew, onRevoke, onChat, onAnalytic
 
         {/* Balance card */}
         <div style={{ padding: '0 20px', marginBottom: 22 }}>
-          <BalanceCard />
+          <BalanceCard walletAddress={walletAddress} />
         </div>
 
         {/* Featured agent — violet gradient card */}

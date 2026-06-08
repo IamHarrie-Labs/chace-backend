@@ -2,60 +2,71 @@ import React, { useEffect, useState } from "react";
 import { useTheme } from "../ThemeContext";
 import { api } from "../api";
 
+interface Props {
+  walletAddress: string;
+}
+
 const nb = (bg = '#fff', r = 14, sh = '4px 4px 0 #0A0A18'): React.CSSProperties => ({
   background: bg, border: '2px solid #0A0A18', boxShadow: sh, borderRadius: r,
 });
 
-export default function BalanceCard() {
+export default function BalanceCard({ walletAddress }: Props) {
   const { theme } = useTheme();
-  const [balance, setBalance] = useState<string | null>(null);
   const [network, setNetwork] = useState<string>("");
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
 
+  // Only check backend health (network/online status) — NOT the server wallet balance
   useEffect(() => {
     api.health()
-      .then(r => { setBalance(r.balance); setNetwork(r.network); })
-      .catch(() => setBalance("—"));
+      .then(r => { setNetwork(r.network); setBackendOnline(true); })
+      .catch(() => { setBackendOnline(false); });
   }, []);
 
-  const tonNum = balance !== null ? parseFloat(balance) : NaN;
-  const ton    = isFinite(tonNum) ? tonNum : null;
-  const usd    = ton != null ? (ton * 4.87).toFixed(2) : "—";
-  const disp   = ton != null ? ton.toFixed(2) : "—";
+  const short = walletAddress
+    ? `${walletAddress.slice(0, 8)}…${walletAddress.slice(-6)}`
+    : '';
 
   return (
     <div style={{ ...nb(theme.card, 16, '4px 4px 0 #0A0A18'), padding: '18px 20px 16px' }}>
       {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#6B7280', letterSpacing: 2 }}>AGENT WALLET</span>
-        {network && (
-          <div style={{ ...nb(`${theme.accent}22`, 8, '2px 2px 0 #0A0A18'), padding: '3px 10px', display: 'inline-block' }}>
-            <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, fontWeight: 700, color: theme.accent }}>{network.toUpperCase()}</span>
-          </div>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#6B7280', letterSpacing: 2 }}>CONNECTED WALLET</span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {network && (
+            <div style={{ ...nb(`${theme.accent}22`, 8, 'none'), padding: '3px 10px', display: 'inline-block', border: `1px solid ${theme.accent}55`, boxShadow: 'none' }}>
+              <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, fontWeight: 700, color: theme.accent }}>{network.toUpperCase()}</span>
+            </div>
+          )}
+          {backendOnline !== null && (
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: backendOnline ? theme.accent : theme.red, border: `1.5px solid #0A0A18`, flexShrink: 0 }} title={backendOnline ? 'Backend online' : 'Backend offline'} />
+          )}
+        </div>
       </div>
 
-      {/* Balance */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      {/* Wallet address */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{ width: 10, height: 10, background: theme.accent, flexShrink: 0, borderRadius: 1, border: '1.5px solid #0A0A18' }} />
+        <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 13, fontWeight: 700, color: theme.text }}>{short}</span>
+        <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: theme.accent, marginLeft: 'auto', letterSpacing: 1 }}>CONNECTED ✓</span>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: '#E5E7EB', marginBottom: 12 }} />
+
+      {/* Status rows */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: -2, color: theme.text, lineHeight: 1 }}>
-              {balance === null ? <span style={{ fontSize: 20, color: '#6B7280', fontWeight: 500 }}>loading…</span> : disp}
-            </span>
-            {balance !== null && <span style={{ fontSize: 18, fontWeight: 700, color: theme.accent }}>TON</span>}
+          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#9CA3AF', marginBottom: 3 }}>BACKEND STATUS</div>
+          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 11, fontWeight: 700, color: backendOnline === null ? '#9CA3AF' : backendOnline ? theme.accent : theme.red }}>
+            {backendOnline === null ? 'Checking…' : backendOnline ? 'Online ●' : 'Offline ○'}
           </div>
-          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 10, color: '#6B7280', marginTop: 5 }}>≈ ${usd} USD</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ ...nb(`${theme.accent}22`, 8, '2px 2px 0 #0A0A18'), padding: '6px 12px', display: 'inline-block' }}>
-            <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 12, fontWeight: 700, color: theme.accent }}>↑ 0.0%</span>
+          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#9CA3AF', marginBottom: 3 }}>NETWORK</div>
+          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 11, fontWeight: 700, color: theme.text }}>
+            {network ? network.toUpperCase() : '—'}
           </div>
-          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#9CA3AF', marginTop: 4 }}>TODAY</div>
         </div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ marginTop: 12, height: 3, background: '#E5E7EB', borderRadius: 0 }}>
-        <div style={{ width: ton != null && ton > 0 ? '62%' : '4%', height: '100%', background: theme.accent, transition: 'width 0.6s ease' }} />
       </div>
     </div>
   );

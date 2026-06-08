@@ -7,6 +7,7 @@ import "./styles.css";
 
 import NavBar from "./components/NavBar";
 import RevokeModal from "./components/RevokeModal";
+import Onboarding from "./components/Onboarding";
 import HomeScreen from "./components/HomeScreen";
 import NewStrategyScreen from "./components/NewStrategyScreen";
 import StrategiesScreen from "./components/StrategiesScreen";
@@ -169,6 +170,15 @@ export default function App() {
   }
 
   const DARK_NAVY = '#0A0A18';
+
+  // ── Show onboarding until wallet is connected ──
+  if (!walletAddress) {
+    return (
+      <div className="shell" style={{ background: '#0A0A18' }}>
+        <Onboarding onConnected={() => {}} />
+      </div>
+    );
+  }
 
   return (
     <div className="shell" style={{ background: theme.bg }}>
