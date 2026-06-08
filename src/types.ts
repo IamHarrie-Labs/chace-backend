@@ -25,6 +25,7 @@ export interface ParsedIntent {
 }
 
 export interface SwapQuote {
+  quoteId: string;      // Omniston quote ID — needed for buildTransfer
   fromToken: string;
   toToken: string;
   inputAmount: bigint;

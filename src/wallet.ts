@@ -10,7 +10,7 @@
  * local MCP server process, or fall back to direct TON SDK if needed.
  */
 
-import { TonClient, WalletContractV4, internal, toNano, fromNano } from "@ton/ton";
+import { TonClient, WalletContractV4, internal, toNano, fromNano, SendMode } from "@ton/ton";
 import { mnemonicToPrivateKey, mnemonicNew, keyPairFromSeed } from "@ton/crypto";
 import { Address, beginCell } from "@ton/core";
 import { config } from "./config.js";
@@ -187,7 +187,7 @@ export async function revokeAgentWallet(
           body: beginCell().storeUint(0, 32).storeStringTail("delegate-revoke").endCell(),
         }),
       ],
-      sendMode: (1 | 2) as 1,  // PAY_GAS_SEPARATELY | IGNORE_ERRORS
+      sendMode: SendMode.PAY_GAS_SEPARATELY | SendMode.IGNORE_ERRORS,
     });
   }
 

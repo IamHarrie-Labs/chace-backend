@@ -31,27 +31,19 @@ const pendingConfirm = new Map<number, {
 
 // /start
 bot.command("start", async (ctx) => {
-  const masterAddr = await getMasterAddress().catch(() => "not configured");
-  const balance    = await getMasterBalance().catch(() => "?");
-
   await ctx.reply(
     `👋 *Welcome to Chace*\n\n` +
-    `Autonomous DeFi on TON. Tell me what you want — I'll execute it in an isolated wallet you can revoke instantly.\n\n` +
-    `Wallet: \`${masterAddr}\`\n` +
-    `Balance: *${balance} TON*\n\n` +
-    `*Try:*\n` +
+    `Delegate DeFi to AI agents. DCA, limit orders, yield — all running in isolated wallets you can revoke instantly.\n\n` +
+    `*Tap the button below to open the app* — or type a command:\n` +
     `• "DCA 30 TON into USDT over 6 buys every hour"\n` +
     `• "Swap 5 TON for USDT"\n` +
-    `• "Buy TON when price drops below $3.80"\n\n` +
-    `/agents — view active agents\n` +
-    `/revoke — stop an agent\n` +
-    `/app — open mini-app`,
+    `• "Buy TON when price drops below $3.80"`,
     {
       parse_mode: "Markdown",
       reply_markup: new InlineKeyboard()
-        .url("🔍 Ask Mira for ideas", generateMiraDeepLink())
+        .webApp("📱 Open Chace", config.telegram.miniAppUrl)
         .row()
-        .url("📱 Open Chace App", `${config.telegram.miniAppUrl}`),
+        .url("🔍 Ask Mira for ideas", generateMiraDeepLink()),
     }
   );
 });

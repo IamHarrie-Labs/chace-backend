@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { Agent, AgentType, ChatMessage, LaunchParams, Screen } from "./types";
 import { SEED_AGENTS } from "./mockData";
 import { useTheme } from "./ThemeContext";
@@ -42,6 +42,39 @@ export default function App() {
 
   const activeCount = agents.filter(a => a.status !== 'complete').length;
   const chatAgent   = agents.find(a => a.id === chatAgentId) ?? null;
+
+  // ── Poll backend for live agent status every 30s ──────────────────────────
+  const userId = walletAddress ? walletAddress : "12345";
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const syncAgents = useCallback(async () => {
+    const liveIds = agents.filter(a => a.sessionId && a.status === 'active').map(a => a.sessionId!);
+    if (!liveIds.length) return;
+    try {
+      const { sessions } = await api.getSessions(userId);
+      setAgents(prev => prev.map(a => {
+        if (!a.sessionId) return a;
+        const live = sessions.find(s => s.id === a.sessionId);
+        if (!live) return a;
+        const nextMs = live.nextSwapAt ? live.nextSwapAt - Date.now() : 0;
+        const nextIn = nextMs > 0
+          ? nextMs > 3_600_000 ? `${Math.floor(nextMs/3_600_000)}h` : `${Math.floor(nextMs/60_000)}m`
+          : '—';
+        return {
+          ...a,
+          completedBuys: live.swapsCompleted,
+          totalBuys:     live.swapsTotal,
+          nextIn,
+          status: live.status === 'completed' ? 'complete' : live.status === 'revoked' ? 'complete' : 'active',
+        };
+      }));
+    } catch { /* backend unreachable — keep local state */ }
+  }, [agents, userId]);
+
+  useEffect(() => {
+    pollRef.current = setInterval(syncAgents, 30_000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [syncAgents]);
 
   function goTo(s: Screen) { setScreen(s); }
 

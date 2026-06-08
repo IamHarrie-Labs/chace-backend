@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { AgentType, LaunchParams } from "../types";
 import { TOKENS } from "../types";
 import { useTheme } from "../ThemeContext";
+import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
 
 interface Props {
   initialType: AgentType;
@@ -19,6 +20,8 @@ const BILL_SERVICES = ['Netflix', 'Spotify', 'Amazon Prime', 'YouTube Premium', 
 
 export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
   const { theme } = useTheme();
+  const walletAddress = useTonAddress();
+
   const [step, setStep]       = useState(1);
   const [type, setType]       = useState<AgentType>(initialType);
   const [name, setName]       = useState('');
@@ -44,17 +47,11 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
     fontFamily: 'Space Grotesk,sans-serif', fontSize: 14, fontWeight: 700,
     cursor: 'pointer', borderRadius: 6, outline: 'none',
   };
-  const nameInputStyle: React.CSSProperties = {
-    width: '100%', background: theme.card, border: `1.5px solid ${theme.bdr}`,
-    color: theme.text, fontFamily: 'Space Grotesk,sans-serif',
-    fontSize: 15, fontWeight: 600, borderRadius: 6, outline: 'none',
-    padding: '10px 14px', boxSizing: 'border-box',
-  };
 
   const autoName = type === 'dca'   ? `${from} → ${to} DCA`
                  : type === 'limit' ? `Buy ${from} < $${lp}`
                  : type === 'yield' ? `${from} Yield`
-                 : `${service} Bills`;
+                 : `${service ?? 'Bills'} Auto-Pay`;
 
   return (
     <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -78,7 +75,7 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
         ))}
       </div>
 
-      {/* ── Step 1: Choose type + name ── */}
+      {/* ── Step 1 ── */}
       {step === 1 && (
         <>
           <div>
@@ -118,7 +115,12 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={autoName}
-              style={nameInputStyle}
+              style={{
+                width: '100%', background: theme.card, border: `1.5px solid ${theme.bdr}`,
+                color: theme.text, fontFamily: 'Space Grotesk,sans-serif',
+                fontSize: 15, fontWeight: 600, borderRadius: 6, outline: 'none',
+                padding: '10px 14px', boxSizing: 'border-box',
+              }}
             />
           </div>
 
@@ -130,11 +132,10 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
         </>
       )}
 
-      {/* ── Step 2: Configure ── */}
+      {/* ── Step 2 ── */}
       {step === 2 && (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
             {type === 'bills' ? (
               <>
                 <div>
@@ -174,7 +175,6 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
                     </select>
                   </div>
                 </div>
-
                 <div>
                   <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.sub, letterSpacing: 2, marginBottom: 8 }}>TOTAL AMOUNT</div>
                   <div style={{ position: 'relative' }}>
@@ -183,7 +183,6 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
                   </div>
                   <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.sub, marginTop: 5 }}>≈ ${usd} USD</div>
                 </div>
-
                 {type === 'dca' && (
                   <>
                     <div>
@@ -217,7 +216,6 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
                     </div>
                   </>
                 )}
-
                 {type === 'limit' && (
                   <div>
                     <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: theme.sub, letterSpacing: 2, marginBottom: 8 }}>BUY BELOW PRICE (USD)</div>
@@ -230,7 +228,6 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
               </>
             )}
           </div>
-
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setStep(1)} style={{
               flex: 1, background: theme.card, border: `1.5px solid ${theme.bdr}`, color: theme.sub,
@@ -245,7 +242,7 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
         </>
       )}
 
-      {/* ── Step 3: Review ── */}
+      {/* ── Step 3: Review + wallet gate ── */}
       {step === 3 && (
         <>
           <div style={{
@@ -260,7 +257,7 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
               ['Type',   type === 'dca' ? 'Dollar Cost Average' : type === 'limit' ? 'Limit Order' : type === 'yield' ? 'Yield Farming' : 'Bill Payment'],
               ...(type === 'bills' ? [
                 ['Service', service],
-                ['Budget',  `${amt} TON/month (≈$${usd})`],
+                ['Budget', `${amt} TON/month (≈$${usd})`],
               ] : [
                 ['Pair',   `${from} → ${to}`],
                 ['Amount', `${amt} ${from}  (≈ $${usd})`],
@@ -277,6 +274,16 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
                 <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.text, fontWeight: 700 }}>{v}</span>
               </div>
             ))}
+
+            {/* Wallet status row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: `1px solid ${theme.bdr}` }}>
+              <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.sub }}>Wallet</span>
+              <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, fontWeight: 700,
+                color: walletAddress ? theme.accent : theme.red }}>
+                {walletAddress ? `${walletAddress.slice(0,6)}…${walletAddress.slice(-4)}` : '⚠ not connected'}
+              </span>
+            </div>
+
             <div style={{ background: `${theme.accent}10`, border: `1px solid ${theme.accent}33`, borderRadius: 6, padding: '12px', marginTop: 14 }}>
               <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, color: theme.accent, letterSpacing: 2, marginBottom: 5 }}>
                 {type === 'bills' ? 'MONTHLY AUTO-PAY' : 'AGENT WALLET FUNDED WITH'}
@@ -293,11 +300,27 @@ export default function NewStrategyScreen({ initialType, onLaunch }: Props) {
               flex: 1, background: theme.card, border: `1.5px solid ${theme.bdr}`, color: theme.sub,
               padding: '13px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', borderRadius: 8,
             }}>← BACK</button>
-            <button onClick={() => onLaunch({ type, name: name || undefined, from, to, amt, buys, freq, lp, service })} style={{
-              flex: 2, background: theme.accent, border: `2px solid ${theme.accent}`,
-              color: '#fff', padding: '13px',
-              fontFamily: 'Space Grotesk,sans-serif', fontSize: 14, fontWeight: 800, cursor: 'pointer', borderRadius: 8,
-            }}>FUND + LAUNCH ⟳</button>
+
+            {walletAddress ? (
+              <button onClick={() => onLaunch({ type, name: name || undefined, from, to, amt, buys, freq, lp, service })} style={{
+                flex: 2, background: theme.accent, border: `2px solid ${theme.accent}`,
+                color: '#fff', padding: '13px',
+                fontFamily: 'Space Grotesk,sans-serif', fontSize: 14, fontWeight: 800, cursor: 'pointer', borderRadius: 8,
+              }}>FUND + LAUNCH ⟳</button>
+            ) : (
+              <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{
+                  background: `${theme.red}12`, border: `1.5px solid ${theme.red}44`,
+                  borderRadius: 8, padding: '10px 14px', textAlign: 'center',
+                  fontFamily: 'Space Mono,monospace', fontSize: 10, color: theme.red,
+                }}>
+                  Connect wallet to launch
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <TonConnectButton />
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

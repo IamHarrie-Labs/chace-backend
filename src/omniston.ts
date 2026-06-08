@@ -3,16 +3,16 @@
  * Uses the official @ston-fi/omniston-sdk.
  */
 
-import { Omniston, SettlementMethod } from "@ston-fi/omniston-sdk";
+import { Omniston } from "@ston-fi/omniston-sdk";
 import { TonClient, WalletContractV4, internal, toNano, fromNano, Address } from "@ton/ton";
 import { mnemonicToPrivateKey } from "@ton/crypto";
+import { beginCell, Cell } from "@ton/core";
 import { config } from "./config.js";
 import type { SwapQuote } from "./types.js";
 
 const OMNISTON_WS = "wss://omni-ws.ston.fi";
 
 // Omniston runs on mainnet only — always use mainnet token addresses for quotes.
-// The actual swap execution uses whichever network is configured.
 const TOKEN_ADDRESSES: Record<string, string> = {
   TON:  "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c",
   USDT: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
@@ -21,14 +21,18 @@ const TOKEN_ADDRESSES: Record<string, string> = {
   DOGS: "EQCvxJy4eG8hyHBFsZ7eePxrRsUQSFE_jpptRAYBmcG_DOGS",
 };
 
-function tokenAssetId(symbol: string): { chain: { $case: "ton"; value: { kind: { $case: "native"; value: {} } | { $case: "jetton"; value: string } } } } {
+function tokenAssetId(symbol: string) {
   const sym = symbol.toUpperCase();
   if (sym === "TON") {
-    return { chain: { $case: "ton", value: { kind: { $case: "native", value: {} } } } };
+    return { chain: { $case: "ton" as const, value: { kind: { $case: "native" as const, value: {} } } } };
   }
   const addr = TOKEN_ADDRESSES[sym];
   if (!addr) throw new Error(`Unknown token: ${symbol}. Supported: ${Object.keys(TOKEN_ADDRESSES).join(", ")}`);
-  return { chain: { $case: "ton", value: { kind: { $case: "jetton", value: addr } } } };
+  return { chain: { $case: "ton" as const, value: { kind: { $case: "jetton" as const, value: addr } } } };
+}
+
+function tonChainAddress(address: string) {
+  return { chain: { $case: "ton" as const, value: address } };
 }
 
 // ── Quote ─────────────────────────────────────────────────────────────────
@@ -53,38 +57,37 @@ export async function getSwapQuote(
       settlementParams: [{ params: { $case: "swap", value: {} } }],
     }).subscribe({
       next: (event: any) => {
-        const e = event; // events are flat — $case is at top level
-        console.log("[omniston] event type:", e.$case);
+        console.log("[omniston] event type:", event.$case);
 
-        if (e.$case === "noQuote") {
-          // No market maker responded — valid protocol state, not a code error
+        if (event.$case === "noQuote") {
           clearTimeout(timeout);
           sub.unsubscribe();
-          reject(new Error("NO_QUOTE: No market maker responded. Try again or use a different pair."));
+          reject(new Error("NO_QUOTE: No market maker responded."));
           return;
         }
 
-        if (e.$case !== "quoteUpdated") return; // skip ack, keepAlive
+        if (event.$case !== "quoteUpdated") return;
 
         clearTimeout(timeout);
         sub.unsubscribe();
 
-        const q = e.value ?? e;
+        const q = event.value ?? event;
+        // The quoteId is the RFQ id from the ack or the quote itself
+        const quoteId: string = q.quoteId ?? q.rfqId ?? q.id ?? `${Date.now()}`;
+
         resolve({
+          quoteId,
           fromToken,
           toToken,
-          inputAmount: BigInt(q.inputUnits ?? amountNano),
+          inputAmount:  BigInt(q.inputUnits  ?? amountNano),
           outputAmount: BigInt(q.outputUnits ?? "0"),
           routerAddress: q.routerAddress ?? q.router_address ?? "",
-          poolAddress: q.poolAddress ?? q.pool_address ?? "",
+          poolAddress:   q.poolAddress   ?? q.pool_address   ?? "",
           priceImpact: q.priceImpactBps ? q.priceImpactBps / 100 : 0,
-          minOutput: BigInt(q.minOutputUnits ?? q.outputUnits ?? "0"),
+          minOutput:   BigInt(q.minOutputUnits ?? q.outputUnits ?? "0"),
         });
       },
-      error: (err: Error) => {
-        clearTimeout(timeout);
-        reject(err);
-      },
+      error: (err: Error) => { clearTimeout(timeout); reject(err); },
     });
   });
 }
@@ -101,29 +104,50 @@ export async function executeSwap(
     apiKey: config.ton.apiKey || undefined,
   });
 
-  const operatorKP = await mnemonicToPrivateKey(operatorMnemonic);
+  const operatorKP   = await mnemonicToPrivateKey(operatorMnemonic);
   const agentContract = WalletContractV4.create({ publicKey: operatorKP.publicKey, workchain: 0 });
-  const agentWallet = client.open(agentContract);
-  const seqno = await agentWallet.getSeqno();
+  const agentWalletOpen = client.open(agentContract);
 
-  const { beginCell } = await import("@ton/core");
-  const swapPayload = beginCell()
-    .storeUint(0x25938561, 32) // swap op code
-    .storeUint(0, 64)          // query id
-    .storeCoins(quote.minOutput)
-    .endCell();
+  // Use Omniston SDK to build the proper swap transaction
+  const omniston = new Omniston({ apiUrl: OMNISTON_WS });
 
-  await agentWallet.sendTransfer({
+  let messages: { to: Address; value: bigint; body: Cell; bounce: boolean }[];
+
+  try {
+    const tonTx = await omniston.tonBuildSwap({
+      quoteId: quote.quoteId,
+      transferSrcAddress: tonChainAddress(agentAddress),
+    });
+
+    messages = tonTx.messages.map(m => ({
+      to:     Address.parse(m.targetAddress),
+      value:  BigInt(m.sendAmount),
+      body:   Cell.fromHex(m.payload),
+      bounce: true,
+    }));
+  } catch (buildErr) {
+    // Fallback: hand-craft a basic STON.fi v2 swap message if SDK build fails
+    console.warn("[omniston] tonBuildSwap failed, using fallback:", (buildErr as Error).message);
+    messages = [{
+      to:    Address.parse(quote.routerAddress),
+      value: quote.inputAmount + toNano("0.15"),
+      body:  beginCell()
+               .storeUint(0x25938561, 32)  // swap op
+               .storeUint(0, 64)            // query id
+               .storeCoins(quote.minOutput)
+             .endCell(),
+      bounce: true,
+    }];
+  }
+
+  const seqno = await agentWalletOpen.getSeqno().catch(() => 0);
+
+  await agentWalletOpen.sendTransfer({
     secretKey: operatorKP.secretKey,
     seqno,
-    messages: [
-      internal({
-        to: Address.parse(quote.routerAddress),
-        value: quote.inputAmount + toNano("0.1"),
-        bounce: true,
-        body: swapPayload,
-      }),
-    ],
+    messages: messages.map(m =>
+      internal({ to: m.to, value: m.value, bounce: m.bounce, body: m.body })
+    ),
   });
 
   console.log(
@@ -131,7 +155,8 @@ export async function executeSwap(
     `~${fromNano(quote.outputAmount)} ${quote.toToken}`
   );
 
-  return `${agentAddress}-swap-${Date.now()}`;
+  // Return a pseudo tx hash — real hash requires waiting for tx confirmation
+  return `${agentAddress.slice(0, 8)}-swap-${Date.now()}`;
 }
 
 export function formatQuote(quote: SwapQuote): string {
