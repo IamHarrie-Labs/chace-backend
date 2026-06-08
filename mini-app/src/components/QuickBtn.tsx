@@ -15,23 +15,18 @@ export default function QuickBtn({ label, icon, onClick }: Props) {
       style={{
         flex: 1,
         background: theme.card,
-        border: `1px solid ${theme.bdr}`,
-        borderRadius: 16,
-        padding: '14px 4px 12px',
+        border: '2px solid #0A0A18',
+        boxShadow: '3px 3px 0 #0A0A18',
+        borderRadius: 50,
+        padding: '11px 4px 10px',
         cursor: 'pointer',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: 6,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        transition: 'transform 0.12s, box-shadow 0.12s',
+        alignItems: 'center', gap: 5,
+        fontFamily: 'Space Grotesk, sans-serif',
       }}
     >
-      <div style={{
-        width: 36, height: 36, borderRadius: 12,
-        background: `${theme.accent}18`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, color: theme.accent,
-      }}>{icon}</div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: theme.text }}>{label}</span>
+      <span style={{ fontSize: 18, lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, fontFamily: 'Space Mono, monospace' }}>{label}</span>
     </button>
   );
 }

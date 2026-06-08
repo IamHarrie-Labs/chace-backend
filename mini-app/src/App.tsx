@@ -6,7 +6,6 @@ import { api, setWalletAddress } from "./api";
 import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
 import "./styles.css";
 
-import ChaceMark from "./components/ChaceMark";
 import NavBar from "./components/NavBar";
 import RevokeModal from "./components/RevokeModal";
 import HomeScreen from "./components/HomeScreen";
@@ -15,22 +14,11 @@ import StrategiesScreen from "./components/StrategiesScreen";
 import ActivityScreen from "./components/ActivityScreen";
 import AgentChatScreen from "./components/AgentChatScreen";
 
-const SCREEN_TITLES: Record<Screen, string> = {
-  home:       'Chace',
-  new:        'New Strategy',
-  strategies: 'Agents',
-  activity:   'Activity',
-  chat:       'Agent Chat',
-};
-
 export default function App() {
   const { theme, isDark, toggle } = useTheme();
   const walletAddress = useTonAddress();
 
-  // Sync wallet address to API client whenever it changes
-  useEffect(() => {
-    setWalletAddress(walletAddress || null);
-  }, [walletAddress]);
+  useEffect(() => { setWalletAddress(walletAddress || null); }, [walletAddress]);
 
   const [screen, setScreen]           = useState<Screen>('home');
   const [newType, setNewType]         = useState<AgentType>('dca');
@@ -42,11 +30,10 @@ export default function App() {
 
   const activeCount = agents.filter(a => a.status !== 'complete').length;
   const chatAgent   = agents.find(a => a.id === chatAgentId) ?? null;
+  const userId      = walletAddress || "12345";
 
-  // ── Poll backend for live agent status every 30s ──────────────────────────
-  const userId = walletAddress ? walletAddress : "12345";
+  /* ── Poll backend every 30s ── */
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const syncAgents = useCallback(async () => {
     const liveIds = agents.filter(a => a.sessionId && a.status === 'active').map(a => a.sessionId!);
     if (!liveIds.length) return;
@@ -65,10 +52,10 @@ export default function App() {
           completedBuys: live.swapsCompleted,
           totalBuys:     live.swapsTotal,
           nextIn,
-          status: live.status === 'completed' ? 'complete' : live.status === 'revoked' ? 'complete' : 'active',
+          status: live.status === 'completed' || live.status === 'revoked' ? 'complete' : 'active',
         };
       }));
-    } catch { /* backend unreachable — keep local state */ }
+    } catch { /* backend unreachable */ }
   }, [agents, userId]);
 
   useEffect(() => {
@@ -89,23 +76,15 @@ export default function App() {
     setScreen('new');
   }
 
-  function handleOpenChat(id: number) {
-    setChatAgentId(id);
-    setScreen('chat');
-  }
+  function handleOpenChat(id: number) { setChatAgentId(id); setScreen('chat'); }
 
   function handleAddMessage(agentId: number, msg: ChatMessage) {
-    setAgents(prev => prev.map(a =>
-      a.id === agentId ? { ...a, chat: [...a.chat, msg] } : a
-    ));
+    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, chat: [...a.chat, msg] } : a));
   }
 
   async function handleLaunch(params: LaunchParams) {
     const { type, name, from, to, amt, buys, freq, lp, service } = params;
-
-    const freqToMinutes: Record<string, number> = {
-      hourly: 60, daily: 1440, weekly: 10080,
-    };
+    const freqToMinutes: Record<string, number> = { hourly: 60, daily: 1440, weekly: 10080 };
 
     const autoTitle = type === 'dca'   ? `${from} → ${to} DCA`
                     : type === 'limit' ? `Buy ${from} < $${lp}`
@@ -113,16 +92,16 @@ export default function App() {
                     : `${service ?? 'Bills'} Auto-Pay`;
 
     const subs: Record<AgentType, string> = {
-      dca:   `${(parseFloat(amt || '0') / buys).toFixed(2)} ${from} × ${buys} buys · ${freq}`,
+      dca:   `${(parseFloat(amt || '0') / buys).toFixed(2)} ${from} × ${buys} · ${freq}`,
       limit: 'Limit order · monitoring',
       yield: 'Auto-compounding',
       bills: `${service} · monthly · ${amt} TON`,
     };
 
-    const initMsg = type === 'dca'   ? `DCA agent deployed. Buying ${(parseFloat(amt||'0')/buys).toFixed(2)} ${from} → ${to} every ${freq}, ${buys} times. Tap here to check in.`
-                  : type === 'limit' ? `Limit agent online. Watching ${from}/USD. I'll trigger the moment price drops below $${lp}.`
+    const initMsg = type === 'dca'   ? `DCA agent deployed. Buying ${(parseFloat(amt||'0')/buys).toFixed(2)} ${from} → ${to} every ${freq}, ${buys} times.`
+                  : type === 'limit' ? `Limit agent online. Watching ${from}/USD. I'll trigger below $${lp}.`
                   : type === 'yield' ? `Yield agent active. Auto-compounding your ${from} position.`
-                  : `Bills agent ready. I'll auto-pay your ${service} subscription monthly using TON via Bitrefill.`;
+                  : `Bills agent ready. Auto-paying ${service} monthly via Bitrefill.`;
 
     const localId = Date.now();
     const newAgent: Agent = {
@@ -142,22 +121,12 @@ export default function App() {
 
     if (type !== 'bills') {
       try {
-        const res = await api.launch({
-          type, from, to,
-          amount: parseFloat(amt) || 0,
-          buys: type === 'dca' ? buys : undefined,
-          intervalMinutes: type === 'dca' ? freqToMinutes[freq] : undefined,
-        });
+        const res = await api.launch({ type, from, to, amount: parseFloat(amt) || 0, buys: type === 'dca' ? buys : undefined, intervalMinutes: type === 'dca' ? freqToMinutes[freq] : undefined });
         if (res.ok && res.sessionId) {
-          setAgents(prev => prev.map(a =>
-            a.id === localId ? { ...a, sessionId: res.sessionId } : a
-          ));
+          setAgents(prev => prev.map(a => a.id === localId ? { ...a, sessionId: res.sessionId } : a));
         }
-      } catch (err) {
-        console.warn('[launch] Backend unavailable (agent shown locally):', err);
-      }
+      } catch (err) { console.warn('[launch] Backend unavailable:', err); }
     }
-
     showToast('Agent launched ⟳');
   }
 
@@ -182,83 +151,24 @@ export default function App() {
     }
   }
 
-  const showNav = screen !== 'chat';
+  const DARK_NAVY = '#0A0A18';
 
   return (
     <div className="shell" style={{ background: theme.bg }}>
 
-      {/* ── Header ── */}
-      <div style={{
-        background: theme.surf,
-        padding: '14px 16px 12px',
-        display: 'flex', alignItems: 'center', gap: 12,
-        flexShrink: 0,
-      }}>
-        {screen !== 'home' ? (
-          <button
-            onClick={() => screen === 'chat' ? goTo('strategies') : goTo('home')}
-            style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: theme.card, border: `1px solid ${theme.bdr}`,
-              color: theme.text, fontSize: 20, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-            }}
-          >‹</button>
-        ) : (
-          <div style={{
-            width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-            background: theme.accent,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: `0 4px 12px ${theme.accent}44`,
-          }}>
-            <ChaceMark size={18} color="#fff" />
-          </div>
-        )}
-
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: theme.text, lineHeight: 1.2 }}>
-            {screen === 'home' ? 'Chace' : SCREEN_TITLES[screen]}
-          </div>
-          {screen === 'home' && (
-            <div style={{ fontSize: 11, color: theme.sub, marginTop: 1, fontWeight: 400 }}>
-              {walletAddress
-                ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
-                : 'Autonomous DeFi'}
-            </div>
-          )}
-          {screen === 'chat' && chatAgent && (
-            <div style={{ fontSize: 11, color: theme.sub, marginTop: 1, fontWeight: 400 }}>
-              {chatAgent.title}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {screen === 'home' && (
-            <div style={{ transform: 'scale(0.82)', transformOrigin: 'right center' }}>
-              <TonConnectButton />
-            </div>
-          )}
-          <button onClick={toggle} style={{
-            width: 34, height: 34,
-            background: theme.card, border: `1px solid ${theme.bdr}`,
-            borderRadius: '50%', padding: 0,
-            cursor: 'pointer', fontSize: 15, lineHeight: 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-          }}>
-            {isDark ? '☀️' : '🌙'}
-          </button>
-        </div>
-      </div>
-
       {/* ── Screen content ── */}
       {screen === 'chat' && chatAgent ? (
-        <AgentChatScreen agent={chatAgent} onAddMessage={handleAddMessage} />
+        <AgentChatScreen
+          agent={chatAgent}
+          onAddMessage={handleAddMessage}
+          onBack={() => goTo('strategies')}
+          onRevoke={setRevokeId}
+          isDark={isDark}
+          onToggleTheme={toggle}
+        />
       ) : (
         <div className="content-scroll">
-          <div key={screen} className="screen-in" style={{ paddingTop: 16 }}>
+          <div key={screen} className="screen-in">
             {screen === 'home' && (
               <HomeScreen
                 agents={agents}
@@ -266,20 +176,37 @@ export default function App() {
                 onRevoke={setRevokeId}
                 onChat={handleOpenChat}
                 onViewAll={() => goTo('strategies')}
+                walletAddress={walletAddress}
+                isDark={isDark}
+                onToggleTheme={toggle}
               />
             )}
             {screen === 'new' && (
-              <NewStrategyScreen initialType={newType} onLaunch={handleLaunch} />
+              <NewStrategyScreen
+                initialType={newType}
+                onLaunch={handleLaunch}
+                onBack={() => goTo('home')}
+              />
             )}
             {screen === 'strategies' && (
-              <StrategiesScreen agents={agents} onRevoke={setRevokeId} onChat={handleOpenChat} />
+              <StrategiesScreen
+                agents={agents}
+                onRevoke={setRevokeId}
+                onChat={handleOpenChat}
+                onBack={() => goTo('home')}
+              />
             )}
-            {screen === 'activity' && <ActivityScreen />}
+            {screen === 'activity' && (
+              <ActivityScreen onBack={() => goTo('home')} />
+            )}
           </div>
         </div>
       )}
 
-      {showNav && <NavBar screen={screen} onNav={handleNav} agentCount={activeCount} />}
+      {/* ── Floating nav (hidden in chat) ── */}
+      {screen !== 'chat' && (
+        <NavBar screen={screen} onNav={handleNav} agentCount={activeCount} />
+      )}
 
       {revokeId !== null && (
         <RevokeModal onCancel={() => setRevokeId(null)} onConfirm={confirmRevoke} />
@@ -287,11 +214,16 @@ export default function App() {
 
       {toast && (
         <div key={toastKey} className="toast-enter" style={{
-          position: 'absolute', top: 70, left: 16, right: 16, zIndex: 200,
-          background: theme.accent, borderRadius: 8, padding: '12px 16px',
-          fontFamily: 'Space Mono,monospace', fontSize: 11, fontWeight: 700,
-          color: '#fff', letterSpacing: 0.5, textAlign: 'center',
-          boxShadow: `0 4px 16px ${theme.accent}44`,
+          position: 'absolute', top: 16, left: 20, right: 20, zIndex: 200,
+          background: DARK_NAVY,
+          border: `2px solid ${DARK_NAVY}`,
+          boxShadow: `4px 4px 0 ${theme.accent}`,
+          borderRadius: 50,
+          padding: '14px 22px',
+          fontFamily: 'Space Mono, monospace',
+          fontSize: 11, fontWeight: 700,
+          color: theme.accent,
+          textAlign: 'center', letterSpacing: 0.5,
         }}>
           {toast}
         </div>

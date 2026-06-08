@@ -9,39 +9,25 @@ interface Props {
 export default function RevokeModal({ onCancel, onConfirm }: Props) {
   const { theme } = useTheme();
   return (
-    <div onClick={onCancel} style={{
-      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)',
-      display: 'flex', alignItems: 'flex-end', zIndex: 100,
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
+    <div onClick={onCancel} style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,24,0.6)', display: 'flex', alignItems: 'flex-end', zIndex: 100 }}>
+      <div className="sheet-in" onClick={e => e.stopPropagation()} style={{
         background: theme.card,
         borderRadius: '24px 24px 0 0',
-        padding: '24px 20px 40px', width: '100%',
-        boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
+        borderLeft: `3px solid ${theme.red}`,
+        borderRight: `3px solid ${theme.red}`,
+        borderTop: `3px solid ${theme.red}`,
+        boxShadow: `0 -6px 0 ${theme.red}, -5px 0 0 #0A0A18, 5px 0 0 #0A0A18`,
+        padding: '10px 22px 48px', width: '100%',
       }}>
-        {/* Handle */}
-        <div style={{ width: 40, height: 4, background: theme.bdr, borderRadius: 4, margin: '0 auto 20px' }} />
-
-        <div style={{ fontSize: 11, fontWeight: 700, color: theme.red, letterSpacing: 0.5, marginBottom: 8 }}>
-          Revoke Agent
+        <div style={{ width: 40, height: 4, background: '#E5E7EB', margin: '10px auto 20px', borderRadius: 4 }} />
+        <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: theme.red, letterSpacing: 2, marginBottom: 12 }}>■ REVOKE AGENT</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: theme.text, marginBottom: 8, letterSpacing: -0.5 }}>Stop this agent?</div>
+        <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 10, color: '#6B7280', lineHeight: 1.8, marginBottom: 26 }}>
+          Unfilled orders will be cancelled.<br />Your tokens return immediately.
         </div>
-        <div style={{ fontSize: 18, color: theme.text, fontWeight: 800, marginBottom: 8, lineHeight: 1.3 }}>
-          Stop this agent and reclaim funds?
-        </div>
-        <div style={{ fontSize: 13, color: theme.sub, lineHeight: 1.7, marginBottom: 24 }}>
-          Any unfilled orders will be cancelled.<br />
-          Your tokens return immediately.
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onCancel} style={{
-            flex: 1, background: theme.dim, border: 'none', color: theme.sub,
-            padding: '14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', borderRadius: 20,
-          }}>Cancel</button>
-          <button onClick={onConfirm} style={{
-            flex: 1, background: theme.red, border: 'none', color: '#fff',
-            padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 20,
-            boxShadow: `0 4px 16px ${theme.red}44`,
-          }}>Revoke</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={onCancel} style={{ background: theme.card, border: '2px solid #0A0A18', boxShadow: '3px 3px 0 #0A0A18', borderRadius: 50, flex: 1, padding: '14px', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={onConfirm} style={{ background: theme.red, border: '2px solid #8B0000', boxShadow: '4px 4px 0 #8B0000', borderRadius: 50, flex: 1, padding: '14px', color: '#fff', fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Revoke ■</button>
         </div>
       </div>
     </div>

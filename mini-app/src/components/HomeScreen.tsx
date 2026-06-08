@@ -2,8 +2,9 @@ import React from "react";
 import type { Agent, AgentType } from "../types";
 import { useTheme } from "../ThemeContext";
 import BalanceCard from "./BalanceCard";
-import QuickBtn from "./QuickBtn";
 import AgentCard from "./AgentCard";
+import ChaceMark from "./ChaceMark";
+import { TonConnectButton } from "@tonconnect/ui-react";
 
 interface Props {
   agents: Agent[];
@@ -11,83 +12,144 @@ interface Props {
   onRevoke: (id: number) => void;
   onChat: (id: number) => void;
   onViewAll: () => void;
+  walletAddress: string;
+  isDark: boolean;
+  onToggleTheme: () => void;
 }
 
-export default function HomeScreen({ agents, onNew, onRevoke, onChat, onViewAll }: Props) {
+/* SVG icons for quick actions */
+const IcoDca    = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>;
+const IcoTarget = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>;
+const IcoStar   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+const IcoSwap   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>;
+
+/* Neo-brutal card helper */
+const nb = (bg = '#fff', r = 14, sh = '4px 4px 0 #0A0A18'): React.CSSProperties => ({
+  background: bg, border: '2px solid #0A0A18', boxShadow: sh, borderRadius: r,
+});
+
+export default function HomeScreen({ agents, onNew, onRevoke, onChat, onViewAll, walletAddress, isDark, onToggleTheme }: Props) {
   const { theme } = useTheme();
   const active = agents.filter(a => a.status !== 'complete');
+  const feat   = active[0] ?? null;
+
+  const qas = [
+    { id: 'dca'   as AgentType | 'swap', Ico: IcoDca,    label: 'DCA',   color: theme.accent  },
+    { id: 'limit' as AgentType | 'swap', Ico: IcoTarget, label: 'Limit', color: '#7B5CF6'      },
+    { id: 'yield' as AgentType | 'swap', Ico: IcoStar,   label: 'Yield', color: '#F59E0B'      },
+    { id: 'swap'  as AgentType | 'swap', Ico: IcoSwap,   label: 'Swap',  color: '#3B82F6'      },
+  ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-      {/* Hero greeting */}
-      <div style={{ padding: '4px 20px 0' }}>
-        <div style={{ fontSize: 28, fontWeight: 800, color: theme.text, lineHeight: 1.2 }}>
-          Good day 👋
-        </div>
-        <div style={{ fontSize: 14, color: theme.sub, fontWeight: 400, marginTop: 4 }}>
-          Your agents are working for you.
-        </div>
-      </div>
-
-      <BalanceCard />
-
-      {/* Quick actions */}
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: theme.text, letterSpacing: 0.2, marginBottom: 12 }}>
-          Quick Actions
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <QuickBtn label="DCA"   icon="⟳" onClick={() => onNew('dca')} />
-          <QuickBtn label="Limit" icon="⊙" onClick={() => onNew('limit')} />
-          <QuickBtn label="Yield" icon="◈" onClick={() => onNew('yield')} />
-          <QuickBtn label="Swap"  icon="⇄" onClick={() => onNew('swap')} />
-        </div>
-      </div>
-
-      {/* Active agents */}
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: theme.text, letterSpacing: 0.2 }}>
-            Active Agents
-            <span style={{
-              marginLeft: 8, background: theme.accent, color: '#fff',
-              borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700,
-            }}>{active.length}</span>
-          </span>
-          <button onClick={onViewAll} style={{
-            background: 'none', border: 'none',
-            fontSize: 13, fontWeight: 600, color: theme.accent, cursor: 'pointer',
-          }}>See all →</button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {active.map(a => (
-            <AgentCard key={a.id} agent={a} onRevoke={onRevoke} onChat={onChat} />
-          ))}
-          {active.length === 0 && (
-            <div style={{
-              background: theme.card,
-              border: `2px dashed ${theme.bdr}`,
-              borderRadius: 16, padding: '36px 16px', textAlign: 'center',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
-            }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: theme.text, marginBottom: 6 }}>
-                No active agents
-              </div>
-              <div style={{ fontSize: 12, color: theme.sub, marginBottom: 16 }}>
-                Launch your first autonomous DeFi agent
-              </div>
-              <button onClick={() => onNew('dca')} style={{
-                background: theme.accent, border: 'none',
-                color: '#fff', padding: '12px 24px',
-                fontSize: 14, fontWeight: 700, cursor: 'pointer', borderRadius: 20,
-                boxShadow: `0 4px 16px ${theme.accent}44`,
-              }}>Create Agent →</button>
+    <div>
+      {/* ── Teal hero header ── */}
+      <div style={{ background: theme.accent, paddingBottom: 44 }}>
+        <div style={{ padding: '16px 22px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 46, fontWeight: 800, letterSpacing: -2.5, color: '#0A0A18', lineHeight: 1 }}>Home</div>
+            <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: 'rgba(0,0,0,0.45)', letterSpacing: 2.5, marginTop: 6 }}>
+              {walletAddress ? `${walletAddress.slice(0,6)}…${walletAddress.slice(-4)}` : 'AUTONOMOUS DeFi · TON'}
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+            <div style={{ transform: 'scale(0.8)', transformOrigin: 'right center' }}>
+              <TonConnectButton />
+            </div>
+            <button onClick={onToggleTheme} style={{ ...nb('rgba(255,255,255,0.3)', 50, '2px 2px 0 rgba(0,0,0,0.2)'), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15, color: '#0A0A18', border: '2px solid rgba(0,0,0,0.2)', boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}>
+              {isDark ? '☀️' : '🌙'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Cream body ── */}
+      <div style={{ background: theme.bg, borderRadius: '26px 26px 0 0', marginTop: -26, paddingTop: 24 }}>
+
+        {/* Balance card */}
+        <div style={{ padding: '0 20px', marginBottom: 22 }}>
+          <BalanceCard />
+        </div>
+
+        {/* Featured agent — violet gradient card */}
+        <div style={{ padding: '0 20px', marginBottom: 22 }}>
+          {feat ? (
+            <div style={{ ...nb('linear-gradient(140deg, #7B5CF6 0%, #5237C8 100%)', 20, '5px 5px 0 #0A0A18'), padding: '20px', position: 'relative', overflow: 'hidden' }}>
+              {/* Watermark */}
+              <div style={{ position: 'absolute', right: -10, bottom: -16, opacity: 0.08, pointerEvents: 'none' }}>
+                <ChaceMark size={130} color="#fff" />
+              </div>
+              {/* Status badge */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${theme.accent}2E`, border: `1px solid ${theme.accent}66`, borderRadius: 4, padding: '4px 10px', marginBottom: 12 }}>
+                <div style={{ width: 6, height: 6, background: theme.accent, borderRadius: 0 }} />
+                <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: theme.accent, letterSpacing: 2, fontWeight: 700 }}>RUNNING NOW</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: -0.5, marginBottom: 4 }}>{feat.title}</div>
+              <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.5)', marginBottom: 14 }}>{feat.subtitle}</div>
+              {feat.totalBuys > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{feat.completedBuys}/{feat.totalBuys} buys done</span>
+                    <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: theme.accent }}>Next: {feat.nextIn}</span>
+                  </div>
+                  <div style={{ height: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 0 }}>
+                    <div style={{ width: `${(feat.completedBuys / feat.totalBuys) * 100}%`, height: '100%', background: theme.accent }} />
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 13, color: theme.accent, fontWeight: 700 }}>{feat.amount}</span>
+                <button onClick={() => onRevoke(feat.id)} style={{ background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: 4, padding: '7px 16px', fontFamily: 'Space Mono, monospace', fontSize: 9, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>REVOKE</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => onNew('dca')} style={{ ...nb(`${theme.accent}14`, 16, `4px 4px 0 #0A0A18`), width: '100%', padding: '28px 20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, border: '2px dashed #0A0A18', boxShadow: 'none' }}>
+              <div style={{ ...nb(theme.accent, 4, '3px 3px 0 #0A0A18'), width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#0A0A18', borderRadius: 4 }}>+</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#0A0A18' }}>Create your first agent</div>
+            </button>
           )}
         </div>
+
+        {/* Your Agents — horizontal scroll */}
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', marginBottom: 14 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: theme.text, letterSpacing: -0.5 }}>Your Agents</span>
+            <button onClick={onViewAll} style={{ ...nb(theme.card, 4, '2px 2px 0 #0A0A18'), padding: '4px 12px', color: theme.text, fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'Space Grotesk, sans-serif', borderRadius: 4 }}>See all →</button>
+          </div>
+          <div className="hscroll">
+            {agents.map(a => {
+              const done = a.status === 'complete';
+              return (
+                <div key={a.id} onClick={() => onChat(a.id)} style={{ ...nb(theme.card, 12, done ? '2px 2px 0 rgba(0,0,0,0.1)' : '4px 4px 0 #0A0A18'), minWidth: 172, flexShrink: 0, padding: '15px', opacity: done ? 0.55 : 1, border: `2px solid ${done ? '#ddd' : '#0A0A18'}`, cursor: 'pointer' }}>
+                  <span style={{ fontFamily: 'Space Mono, monospace', fontSize: 8, letterSpacing: 1.5, color: done ? '#9CA3AF' : theme.accent, border: `1px solid ${done ? '#ddd' : theme.accent}`, borderRadius: 3, padding: '2px 7px' }}>
+                    {done ? 'DONE' : a.type === 'limit' ? 'WATCHING' : 'RUNNING'}
+                  </span>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: theme.text, marginTop: 10, marginBottom: 4 }}>{a.title}</div>
+                  <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: '#6B7280', lineHeight: 1.5, marginBottom: 12 }}>{a.subtitle}</div>
+                  {a.totalBuys > 0 && (
+                    <div style={{ height: 3, background: '#E5E7EB', marginBottom: 8 }}>
+                      <div style={{ width: `${(a.completedBuys / a.totalBuys) * 100}%`, height: '100%', background: theme.accent }} />
+                    </div>
+                  )}
+                  <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 11, fontWeight: 700, color: theme.text }}>{a.amount}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{ padding: '0 20px 8px' }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: theme.text, letterSpacing: -0.5, marginBottom: 14 }}>Quick Actions</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {qas.map(({ id, Ico, label, color }) => (
+              <button key={id} onClick={() => onNew(id)} style={{ ...nb(theme.card, 50, '3px 3px 0 #0A0A18'), display: 'flex', alignItems: 'center', gap: 9, padding: '11px 18px', cursor: 'pointer', fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, fontWeight: 700, color: theme.text }}>
+                <span style={{ color }}><Ico /></span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

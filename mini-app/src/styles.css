@@ -1,4 +1,4 @@
-/* Chace Mini App */
+/* Chace Mini App — Neo Brutalism */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -8,8 +8,9 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   -webkit-font-smoothing: antialiased;
+  background: #F5C842;
 }
 
 .shell {
@@ -27,11 +28,20 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 88px;
+  padding-bottom: 110px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .content-scroll::-webkit-scrollbar { display: none; }
+
+.hscroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 20px 8px;
+  scrollbar-width: none;
+}
+.hscroll::-webkit-scrollbar { display: none; }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -40,14 +50,16 @@ body {
 .screen-in { animation: slideUp 0.2s cubic-bezier(0.16,1,0.3,1) both; }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  from { opacity: 0; transform: translateY(-10px) scale(0.93); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.toast-enter { animation: toastIn 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+.toast-enter { animation: toastIn 0.22s cubic-bezier(.34,1.56,.64,1) both; }
 
-/* White card float on yellow */
-.card-float {
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+@keyframes slideSheet {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
+.sheet-in { animation: slideSheet 0.26s cubic-bezier(.34,1.2,.64,1) both; }
+
+/* Neo-brutal press effect on all buttons */
+button:active { transform: translate(2px, 2px) !important; }
