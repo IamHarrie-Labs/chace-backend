@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { Agent, AgentType, ChatMessage, LaunchParams, Screen } from "./types";
-import { SEED_AGENTS } from "./mockData";
 import { useTheme } from "./ThemeContext";
 import { api, setWalletAddress } from "./api";
 import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
@@ -18,27 +17,30 @@ export default function App() {
   const { theme, isDark, toggle } = useTheme();
   const walletAddress = useTonAddress();
 
+  // Sync wallet address into API client
   useEffect(() => { setWalletAddress(walletAddress || null); }, [walletAddress]);
 
   const [screen, setScreen]           = useState<Screen>('home');
   const [newType, setNewType]         = useState<AgentType>('dca');
-  const [agents, setAgents]           = useState<Agent[]>(SEED_AGENTS);
+  // Always start with empty agents — real data comes from wallet activity only
+  const [agents, setAgents]           = useState<Agent[]>([]);
   const [chatAgentId, setChatAgentId] = useState<number | null>(null);
   const [revokeId, setRevokeId]       = useState<number | null>(null);
   const [toast, setToast]             = useState<string | null>(null);
   const [toastKey, setToastKey]       = useState(0);
+  const [chatTab, setChatTab]         = useState<'chat' | 'analytics'>('chat');
 
   const activeCount = agents.filter(a => a.status !== 'complete').length;
   const chatAgent   = agents.find(a => a.id === chatAgentId) ?? null;
-  const userId      = walletAddress || "12345";
 
-  /* ── Poll backend every 30s ── */
+  /* ── Poll backend every 30s (only when wallet connected) ── */
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncAgents = useCallback(async () => {
+    if (!walletAddress) return; // no wallet = no data to sync
     const liveIds = agents.filter(a => a.sessionId && a.status === 'active').map(a => a.sessionId!);
     if (!liveIds.length) return;
     try {
-      const { sessions } = await api.getSessions(userId);
+      const { sessions } = await api.getSessions(walletAddress);
       setAgents(prev => prev.map(a => {
         if (!a.sessionId) return a;
         const live = sessions.find(s => s.id === a.sessionId);
@@ -56,7 +58,7 @@ export default function App() {
         };
       }));
     } catch { /* backend unreachable */ }
-  }, [agents, userId]);
+  }, [agents, walletAddress]);
 
   useEffect(() => {
     pollRef.current = setInterval(syncAgents, 30_000);
@@ -76,7 +78,17 @@ export default function App() {
     setScreen('new');
   }
 
-  function handleOpenChat(id: number) { setChatAgentId(id); setScreen('chat'); }
+  function handleOpenChat(id: number) {
+    setChatAgentId(id);
+    setChatTab('chat');  // always open on chat tab
+    setScreen('chat');
+  }
+
+  function handleOpenAnalytics(id: number) {
+    setChatAgentId(id);
+    setChatTab('analytics');  // open directly on analytics tab
+    setScreen('chat');
+  }
 
   function handleAddMessage(agentId: number, msg: ChatMessage) {
     setAgents(prev => prev.map(a => a.id === agentId ? { ...a, chat: [...a.chat, msg] } : a));
@@ -121,7 +133,12 @@ export default function App() {
 
     if (type !== 'bills') {
       try {
-        const res = await api.launch({ type, from, to, amount: parseFloat(amt) || 0, buys: type === 'dca' ? buys : undefined, intervalMinutes: type === 'dca' ? freqToMinutes[freq] : undefined });
+        const res = await api.launch({
+          type, from, to,
+          amount: parseFloat(amt) || 0,
+          buys: type === 'dca' ? buys : undefined,
+          intervalMinutes: type === 'dca' ? freqToMinutes[freq] : undefined,
+        });
         if (res.ok && res.sessionId) {
           setAgents(prev => prev.map(a => a.id === localId ? { ...a, sessionId: res.sessionId } : a));
         }
@@ -155,11 +172,11 @@ export default function App() {
 
   return (
     <div className="shell" style={{ background: theme.bg }}>
-
-      {/* ── Screen content ── */}
       {screen === 'chat' && chatAgent ? (
         <AgentChatScreen
           agent={chatAgent}
+          walletAddress={walletAddress}
+          initialTab={chatTab}
           onAddMessage={handleAddMessage}
           onBack={() => goTo('strategies')}
           onRevoke={setRevokeId}
@@ -175,7 +192,9 @@ export default function App() {
                 onNew={handleNew}
                 onRevoke={setRevokeId}
                 onChat={handleOpenChat}
+                onAnalytics={handleOpenAnalytics}
                 onViewAll={() => goTo('strategies')}
+                onActivity={() => goTo('activity')}
                 walletAddress={walletAddress}
                 isDark={isDark}
                 onToggleTheme={toggle}
@@ -193,17 +212,20 @@ export default function App() {
                 agents={agents}
                 onRevoke={setRevokeId}
                 onChat={handleOpenChat}
+                onAnalytics={handleOpenAnalytics}
                 onBack={() => goTo('home')}
               />
             )}
             {screen === 'activity' && (
-              <ActivityScreen onBack={() => goTo('home')} />
+              <ActivityScreen
+                walletAddress={walletAddress}
+                onBack={() => goTo('home')}
+              />
             )}
           </div>
         </div>
       )}
 
-      {/* ── Floating nav (hidden in chat) ── */}
       {screen !== 'chat' && (
         <NavBar screen={screen} onNav={handleNav} agentCount={activeCount} />
       )}

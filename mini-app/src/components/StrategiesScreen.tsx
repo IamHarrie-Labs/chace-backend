@@ -7,6 +7,7 @@ interface Props {
   agents: Agent[];
   onRevoke: (id: number) => void;
   onChat: (id: number) => void;
+  onAnalytics: (id: number) => void;
   onBack: () => void;
 }
 
@@ -16,7 +17,7 @@ const nb = (bg = '#fff', r = 14, sh = '4px 4px 0 #0A0A18'): React.CSSProperties 
   background: bg, border: '2px solid #0A0A18', boxShadow: sh, borderRadius: r,
 });
 
-export default function StrategiesScreen({ agents, onRevoke, onChat, onBack }: Props) {
+export default function StrategiesScreen({ agents, onRevoke, onChat, onAnalytics, onBack }: Props) {
   const { theme } = useTheme();
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -25,6 +26,9 @@ export default function StrategiesScreen({ agents, onRevoke, onChat, onBack }: P
     filter === 'active' ? a.status !== 'complete' :
                           a.status === 'complete'
   );
+
+  const activeCount    = agents.filter(a => a.status !== 'complete').length;
+  const completedCount = agents.filter(a => a.status === 'complete').length;
 
   return (
     <div>
@@ -35,7 +39,7 @@ export default function StrategiesScreen({ agents, onRevoke, onChat, onBack }: P
           <div>
             <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: -2, color: '#0A0A18', lineHeight: 1 }}>Agents</div>
             <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 9, color: 'rgba(0,0,0,0.45)', letterSpacing: 2, marginTop: 5 }}>
-              {agents.filter(a => a.status !== 'complete').length} ACTIVE
+              {activeCount} ACTIVE · {completedCount} DONE
             </div>
           </div>
         </div>
@@ -43,6 +47,27 @@ export default function StrategiesScreen({ agents, onRevoke, onChat, onBack }: P
 
       {/* ── Cream body ── */}
       <div style={{ background: theme.bg, borderRadius: '26px 26px 0 0', marginTop: -26, paddingTop: 22 }}>
+
+        {/* Summary stats — only show if there are agents */}
+        {agents.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, padding: '0 20px', marginBottom: 18 }}>
+            <div style={{ ...nb(theme.card, 10, '3px 3px 0 #0A0A18'), flex: 1, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: theme.accent, letterSpacing: -1 }}>{activeCount}</div>
+              <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 8, color: '#6B7280', letterSpacing: 1.5, marginTop: 2 }}>ACTIVE</div>
+            </div>
+            <div style={{ ...nb(theme.card, 10, '3px 3px 0 #0A0A18'), flex: 1, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#6B7280', letterSpacing: -1 }}>{completedCount}</div>
+              <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 8, color: '#6B7280', letterSpacing: 1.5, marginTop: 2 }}>DONE</div>
+            </div>
+            <div style={{ ...nb(theme.card, 10, '3px 3px 0 #0A0A18'), flex: 1, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#7B5CF6', letterSpacing: -1 }}>
+                {agents.reduce((s, a) => s + a.completedBuys, 0)}
+              </div>
+              <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 8, color: '#6B7280', letterSpacing: 1.5, marginTop: 2 }}>EXECUTES</div>
+            </div>
+          </div>
+        )}
+
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: 8, padding: '0 20px', marginBottom: 18 }}>
           {(['all', 'active', 'done'] as Filter[]).map(f => (
@@ -58,11 +83,19 @@ export default function StrategiesScreen({ agents, onRevoke, onChat, onBack }: P
 
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {list.map(a => (
-            <AgentCard key={a.id} agent={a} onRevoke={onRevoke} onChat={onChat} />
+            <AgentCard key={a.id} agent={a} onRevoke={onRevoke} onChat={onChat} onAnalytics={onAnalytics} />
           ))}
           {list.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '48px 16px', fontFamily: 'Space Mono, monospace', fontSize: 11, color: '#6B7280' }}>
-              No agents in this filter
+            <div style={{ ...nb(theme.card, 12, '4px 4px 0 #0A0A18'), padding: '40px 20px', textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.text, marginBottom: 8 }}>
+                {agents.length === 0 ? 'No agents yet' : 'No agents in this filter'}
+              </div>
+              <div style={{ fontFamily: 'Space Mono, monospace', fontSize: 10, color: '#6B7280', lineHeight: 1.9 }}>
+                {agents.length === 0
+                  ? 'Create your first strategy\nto see agents here.'
+                  : 'Try a different filter.'}
+              </div>
             </div>
           )}
         </div>

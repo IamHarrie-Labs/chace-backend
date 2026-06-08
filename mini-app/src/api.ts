@@ -1,13 +1,14 @@
 /**
  * Mini-app API client — talks to the backend server.
  * In dev: uses VITE_API_URL env var or falls back to localhost:3000.
- * In production: uses the Railway deployment URL.
+ * In production: uses the Render/Railway deployment URL.
  */
 
 const BASE = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3000";
 
 let _walletAddress: string | null = null;
 export function setWalletAddress(addr: string | null) { _walletAddress = addr; }
+export function getWalletAddress(): string | null { return _walletAddress; }
 
 function headers(): Record<string, string> {
   const h: Record<string, string> = { "Content-Type": "application/json" };
@@ -16,9 +17,8 @@ function headers(): Record<string, string> {
     h["x-telegram-init-data"] = tg.initData;
   } else if (_walletAddress) {
     h["x-wallet-address"] = _walletAddress;
-  } else {
-    h["x-user-id"] = "12345";
   }
+  // No hardcoded fallback — unauthenticated requests return empty data
   return h;
 }
 
@@ -54,12 +54,18 @@ export interface ApiSession {
   createdAt:      number;
 }
 
+export interface ApiTx {
+  txHash:        string;
+  action:        string;
+  inputAmount:   string;
+  outputAmount?: string;
+  timestamp:     number;
+  note?:         string;
+}
+
 export interface ApiSessionDetail extends ApiSession {
   intent:    unknown;
-  txHistory: {
-    txHash: string; action: string; inputAmount: string;
-    outputAmount?: string; timestamp: number; note?: string;
-  }[];
+  txHistory: ApiTx[];
   chat: { role: 'user' | 'agent'; content: string; ts: number }[];
 }
 
@@ -68,11 +74,13 @@ export interface ApiSessionDetail extends ApiSession {
 export const api = {
   health: () => get<{ ok: boolean; balance: string; network: string }>("/api/health"),
 
-  getSessions: (userId: string | number) =>
-    get<{ sessions: ApiSession[] }>(`/api/sessions/${userId}`),
+  /** Fetch all sessions for the currently connected wallet */
+  getSessions: (walletAddressOrId: string | number) =>
+    get<{ sessions: ApiSession[] }>(`/api/sessions/${walletAddressOrId}`),
 
-  getSession: (userId: string | number, sessionId: string) =>
-    get<ApiSessionDetail>(`/api/sessions/${userId}/${sessionId}`),
+  /** Fetch a single session with full tx history and chat */
+  getSession: (walletAddressOrId: string | number, sessionId: string) =>
+    get<ApiSessionDetail>(`/api/sessions/${walletAddressOrId}/${sessionId}`),
 
   chat: (sessionId: string, message: string) =>
     post<{ reply: string }>(`/api/chat/${sessionId}`, { message }),
